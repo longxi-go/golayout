@@ -1,0 +1,105 @@
+site_name: golayout Guide
+site_description: One structural formatting policy for Go source and generators
+site_url: !ENV [DOCS_SITE_URL, "https://longxi-go.github.io/golayout/"]
+site_author: The longxi-go Authors
+repo_name: longxi-go/golayout
+repo_url: https://github.com/longxi-go/golayout
+copyright: Copyright &copy; 2026 - present The longxi-go Authors
+
+validation:
+  links:
+    anchors: warn
+
+theme:
+  name: material
+  language: en
+  font: false
+  icon:
+    logo: material/code-braces
+  features:
+    - content.code.copy
+    - navigation.footer
+    - navigation.indexes
+    - navigation.sections
+    - navigation.tabs
+    - navigation.top
+    - navigation.tracking
+    - search.highlight
+    - search.suggest
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: amber
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: amber
+      toggle:
+        icon: material/toggle-switch-off
+        name: Switch to light mode
+
+plugins:
+  - i18n:
+      docs_structure: suffix
+      fallback_to_default: false
+      reconfigure_material: true
+      # Use bundled English search with Han boundaries; avoid a remote tokenizer.
+      reconfigure_search: false
+      languages:
+        - locale: en
+          default: true
+          name: English
+          build: true
+        - locale: zh
+          name: 简体中文
+          build: true
+          site_name: golayout 使用手册
+          site_description: 统一 Go 源码与生成代码的结构化格式策略
+          nav:
+            - 概览: index.md
+            - 开始使用:
+                - 快速开始: quick-start.md
+            - 项目维护:
+                - 架构: architecture.md
+                - 开发指南: development.md
+          theme:
+            language: zh
+  - search:
+      lang: en
+      separator: '[\s\-]+|(?=[\u4e00-\u9fff])|(?<=[\u4e00-\u9fff])'
+  - minify:
+      minify_html: true
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
+extra_css:
+  - assets/stylesheets/ecosystem.css
+
+extra:
+  generator: false
+
+nav:
+  - Overview: index.md
+  - Getting Started:
+      - Quick Start: quick-start.md
+  - Project:
+      - Architecture: architecture.md
+      - Development: development.md

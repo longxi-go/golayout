@@ -1,0 +1,20 @@
+package sample
+
+func Run(ok bool, input chan int) {
+    if ok { println("yes") } else { println("no") }
+    for value := 0; value < 1; value++ { println(value) }
+    switch ok {
+    case true: println("true"); println("again")
+    default: println("false")
+    }
+    select {
+    case value := <-input: println(value)
+    default: println("empty")
+    }
+    { println("standalone") }
+    if ok {}
+    for false {}
+    switch {}
+    select {}
+    {}
+}

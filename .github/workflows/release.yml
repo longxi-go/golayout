@@ -1,0 +1,62 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate stable tag and release notes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Validate Go module release contract
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: python3 scripts/release.py --tag "$RELEASE_TAG"
+
+  checks:
+    name: Verify exact tagged source
+    needs: validate
+    uses: ./.github/workflows/quality.yml
+
+  publish:
+    name: Publish GitHub Release
+    needs: checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Publish maintained English release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+            --verify-tag --title "golayout $RELEASE_TAG" \
+            --notes-file "docs/releases/$RELEASE_TAG.md"
+
+  deploy-site:
+    name: Deploy released documentation
+    needs: publish
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/docs-pages.yml
+    with:
+      release_tag: ${{ github.ref_name }}
