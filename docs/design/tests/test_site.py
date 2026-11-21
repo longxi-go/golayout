@@ -16,6 +16,8 @@ class Markup(HTMLParser):
         super().__init__()
         self.repositories = []
         self.diagram_count = 0
+        self.copyright = []
+        self.in_copyright = False
 
     def handle_starttag(self, tag, attrs):
         attributes = dict(attrs)
@@ -23,9 +25,33 @@ class Markup(HTMLParser):
             self.diagram_count += 1
         if tag == "a" and attributes.get("data-md-component") == "source":
             self.repositories.append(attributes.get("href"))
+        if "md-copyright__highlight" in attributes.get("class", "").split():
+            self.in_copyright = True
+
+    def handle_endtag(self, tag):
+        if tag == "div":
+            self.in_copyright = False
+
+    def handle_data(self, data):
+        if self.in_copyright:
+            self.copyright.append(data)
 
 
 class DocumentationBuild(unittest.TestCase):
+    def test_project_authorship_in_both_languages(self):
+        config = load_config(config_file=str(ROOT / "mkdocs.yml"))
+        owner = f"The {config.repo_name} Authors"
+        self.assertEqual(config.site_author, owner)
+        for locale in ("", "zh"):
+            with self.subTest(locale=locale):
+                html = (ROOT / "site" / locale / "index.html").read_text()
+                markup = Markup()
+                markup.feed(html)
+                self.assertEqual(
+                    "".join(markup.copyright).strip(),
+                    f"Copyright © 2026 - present {owner}",
+                )
+
     def test_native_repository_links_in_both_languages(self):
         repository = load_config(config_file=str(ROOT / "mkdocs.yml")).repo_url
         for locale in ("", "zh"):

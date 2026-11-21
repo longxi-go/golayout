@@ -8,15 +8,28 @@ Use an immutable published version for both source checks and generated output.
 In the module that owns the tool dependency:
 
 ```sh
-go get -tool github.com/longxi-go/golayout/cmd/golayout@v0.1.3
+go get -tool github.com/longxi-go/golayout/cmd/golayout@v0.1.4
 ```
 
-Generators import `github.com/longxi-go/golayout/pkg/format`; they must declare
-the same module version. Keep developer-specific directory replacements out of
-production `go.mod`. A parent `go.work` can select a local checkout during development.
+Generators import the library from the same module version:
 
-For dependency-free contract modules such as gosr, put CLI tooling in a separate
-`tools` module. Include that module explicitly in local workspaces.
+```sh
+go get github.com/longxi-go/golayout/pkg/format@v0.1.4
+```
+
+If your production module must remain free of tool dependencies, create a
+separate module for the CLI. From the repository root:
+
+```sh
+mkdir -p tools
+cd tools
+go mod init example.com/project/tools
+go get -tool github.com/longxi-go/golayout/cmd/golayout@v0.1.4
+```
+
+Replace `example.com/project/tools` with your module path. Commit its `go.mod`
+and `go.sum`; generators declare the library dependency in their own module.
+Keep developer-specific directory replacements out of production `go.mod`.
 
 ## Delegate repository checks
 
@@ -49,12 +62,37 @@ check-format:
 The script selects Git-tracked and eligible untracked Go files, excludes `.tmp`,
 `.cache`, vendor files and symlinks, and includes complete `testdata/**/*.go.tmpl`
 fixtures. Other testdata files and production generator templates stay excluded.
-`setup` verifies dependencies; `check-format` does not rewrite source or module files.
+`setup` verifies dependencies without installing a binary; `check-format` does
+not rewrite source or module files. These commands require Git, Bash, Make and
+the Go version required by the selected golayout release.
 
 The language option comes from the consumer's `go.mod`, not the formatter's
-build toolchain. Keep generated-source formatting on the same version. CI must
-check out shared tooling at the immutable revision required by the consumer;
-include both modules' dependency files in cache keys when using sibling checkouts.
+build toolchain. Use the same language version when formatting generated source.
+
+## CI and local development
+
+CI resolves the golayout version declared by the tool module through Go's
+checksum-verified module mechanism. No sibling checkout is required. From the
+consuming repository root, download dependencies before resolving script paths:
+
+```sh
+GOWORK=off go mod download
+GOWORK=off make setup check-format
+```
+
+For a nested tools module, use:
+
+```sh
+GOWORK=off go -C tools mod download
+GOWORK=off make setup check-format GOLAYOUT_TOOL_MODULE=tools
+```
+
+Include the tool module's `go.mod` and `go.sum` in CI cache keys. Validate generated
+output through the generator's own checks as well.
+
+A local `go.work` may select a different golayout checkout. Include nested tool
+modules explicitly when using a workspace. `GOWORK=off` makes the commands above
+use the dependencies declared in the tool module instead.
 
 ## Format generated output
 

@@ -2,25 +2,42 @@
 
 ## In-memory APIs
 
-`pkg/format.Source` validates the optional language version, applies AST layout
-rules and then runs gofumpt v0.12.0. It does not load application packages or
-resolve types. Calls are independent and leave input bytes unchanged. Invalid
-syntax returns an error without formatted output.
-
 ```mermaid
 flowchart TB
     S["Source bytes"] --> V{"Valid language option and syntax?"}
     V -->|Yes| L["AST layout"]
-    L --> G["gofumpt v0.12.0"]
+    L --> G["gofumpt"]
     G --> F["Formatted bytes"]
     V -->|No| E["Error; no formatted output"]
 ```
 
-`pkg/header.Source` applies an explicit plain-text notice independently of
-formatting. It preserves the code body, package documentation, build constraints
-and generated markers, and rejects replacing another copyright owner. It does
-not infer a template, owner or year policy. Template selection and optional
-loading belong to the caller.
+`pkg/format.Source(input, options)` applies AST layout rules and then gofumpt.
+`Options.LangVersion` selects the target Go language version, such as `go1.27`;
+an empty value uses the formatter's default. An invalid version or invalid syntax
+returns an error without formatted output. Formatting does not load packages,
+resolve types or replace the generator's own type validation.
+
+`pkg/header.Source(source, notice)` applies an explicit plain-text notice
+independently of formatting. It preserves the code body, package documentation,
+build constraints and generated markers, and rejects replacing another copyright
+owner. It does not infer a template, owner or year policy. Template selection and optional
+loading belong to the caller. Both APIs leave input bytes unchanged and have no
+filesystem effects; calls are independent.
+
+A header template must be UTF-8 text without NUL bytes and begin with a plain-text
+copyright line. Supported year forms include `2026`, `2026-2027` and
+`2026-present`. For example, `Copyright © 2026 the example authors.` identifies
+the owner; subsequent lines supply the license notice.
+Do not include `//` or `/* */` around the template. The library adds Go line
+comments. Invalid Go, an unsupported copyright line, a different recognized
+owner, an incomplete Apache line-comment notice or multiple generated markers
+returns an error without output. Incomplete Apache line-comment notices are
+rejected rather than guessing where their license text ends.
+
+Existing line-comment notices are recognized as a copyright line alone, a
+copyright line followed by an SPDX identifier, or a complete Apache notice.
+Other license text is retained as surrounding comments and can be duplicated on
+repeated updates. Use a supported form for repeatable header refreshes.
 
 ## Formatting rules
 
@@ -65,21 +82,39 @@ remain outside the in-memory APIs.
 
 ## Repository integration
 
-Shared scripts select Git-tracked and eligible untracked source. They exclude
-`.tmp`, `.cache`, vendor files and symlinks. Formatting includes complete,
-parseable `testdata/**/*.go.tmpl` fixtures; header refreshes exclude all testdata.
-Ordinary test inputs and production generator templates are not auto-formatted.
+```mermaid
+flowchart LR
+    S["Rendered Go source"] --> H{"Notice required?"}
+    H -->|Yes| N["pkg/header.Source"]
+    H -->|No| F["pkg/format.Source"]
+    N --> F
+    F --> V["Generator validation"]
+    V --> W["Generator output"]
+```
 
-Generators call `pkg/header` when a notice is required, then `pkg/format`, followed
-by their own validation and output steps. Repository gates use the same version
-through the CLI. Consumers must not copy private rules or formatter implementations.
+Each step must succeed before its output is used by the next. The generator
+selects the target language and template, validates the formatted output and
+controls persistence. Neither library executes input code.
+
+Repository gates use the same golayout version through the CLI. Keep file
+selection outside the libraries and reuse the shared implementation rather than
+copying private rules. The [development guide](development.md#source-selection)
+describes the repository scripts' selection policy.
 
 ## Dependency direction
 
-golayout depends on pinned gofumpt and its dependencies, not on gosr, ioc, nemo or
-application source. `pkg/format` composes the private layout implementation;
-`pkg/header` is independent of formatting. The command combines file operations
-with these public APIs.
+```mermaid
+flowchart TB
+    C["cmd/golayout"] -->|delegates| R["internal/command"]
+    R -->|format mode| F["pkg/format"]
+    R -->|header mode| H["pkg/header"]
+    F -->|structural rules| L["internal/layout"]
+    F -->|final formatting| G["gofumpt"]
+```
+
+`pkg/header` is independent of formatting. `pkg/format` composes private layout
+rules with the gofumpt dependency pinned in `go.mod`; gofumpt's optional `-extra`
+rules are disabled. Application modules are not dependencies of either API.
 
 Editor gofumpt settings cover only the upstream formatter. Use the golayout gate
 to check the complete structural policy.

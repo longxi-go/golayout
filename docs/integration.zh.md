@@ -8,14 +8,26 @@
 在管理工具依赖的模块中执行：
 
 ```sh
-go get -tool github.com/longxi-go/golayout/cmd/golayout@v0.1.3
+go get -tool github.com/longxi-go/golayout/cmd/golayout@v0.1.4
 ```
 
-生成器导入 `github.com/longxi-go/golayout/pkg/format`，应声明相同的模块版本。
-生产 `go.mod` 不应包含开发者专属的目录替换；本地开发可在父目录的 `go.work` 中选择本地源码。
+生成器导入相同模块版本中的库：
 
-gosr 等需要保持无工具依赖的契约模块，应将 CLI 工具放在独立的 `tools` 模块，
-并在本地工作区中显式包含该模块。
+```sh
+go get github.com/longxi-go/golayout/pkg/format@v0.1.4
+```
+
+如果生产模块需要保持无工具依赖，在仓库根目录创建独立模块管理 CLI：
+
+```sh
+mkdir -p tools
+cd tools
+go mod init example.com/project/tools
+go get -tool github.com/longxi-go/golayout/cmd/golayout@v0.1.4
+```
+
+将 `example.com/project/tools` 替换为实际模块路径，提交其 `go.mod` 和 `go.sum`；
+生成器在自身模块中声明库依赖。生产 `go.mod` 不应包含开发者专属的目录替换。
 
 <a id="委托仓库检查"></a>
 
@@ -48,11 +60,33 @@ check-format:
 
 脚本选择 Git 已跟踪文件和符合条件的未跟踪 Go 文件，排除 `.tmp`、`.cache`、vendor 文件和符号链接，
 并包含完整的 `testdata/**/*.go.tmpl` 样本。其他 testdata 文件和生产生成器模板不参与格式化。
-`setup` 验证依赖；`check-format` 不重写源码或模块文件。
+`setup` 验证依赖，不安装二进制；`check-format` 不重写源码或模块文件。
+这些命令需要 Git、Bash、Make，以及所选 golayout 版本要求的 Go 版本。
 
 语言选项取自使用方的 `go.mod`，与构建格式化工具所用的 Go 版本无关。
-生成代码也应使用相同的语言版本。CI 必须按使用方固定的不可变版本检出共享工具；
-从同级目录检出时，缓存键应包含两个模块的依赖文件。
+格式化生成代码时应使用相同的语言版本。
+
+## CI 与本地开发
+
+CI 通过 Go 的校验和验证机制解析工具模块声明的 golayout 版本，不需要同级源码仓库。
+在使用方仓库根目录先下载依赖，再解析脚本路径：
+
+```sh
+GOWORK=off go mod download
+GOWORK=off make setup check-format
+```
+
+使用嵌套 tools 模块时，执行：
+
+```sh
+GOWORK=off go -C tools mod download
+GOWORK=off make setup check-format GOLAYOUT_TOOL_MODULE=tools
+```
+
+CI 缓存键应包含工具模块的 `go.mod` 和 `go.sum`。生成代码还需通过生成器自身的检查。
+
+本地 `go.work` 可以选择另一份 golayout 源码，使用工作区时需显式包含嵌套工具模块。
+设置 `GOWORK=off` 后，上述命令改用工具模块声明的依赖。
 
 ## 格式化生成代码
 

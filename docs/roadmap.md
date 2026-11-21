@@ -2,38 +2,32 @@
 
 [English](roadmap.md) | [简体中文](roadmap.zh.md)
 
-## Stage 1: Shared source tooling
+## Stage 1: Source formatting and notices
 
-Available: `pkg/format`, `pkg/header`, the CLI, focused tests and executable
-examples. Quality checks cover Go 1.27 compatibility, formatting, source notices,
-module dependencies, vet, unit tests, race tests and lint.
+The `pkg/format` and `pkg/header` libraries and CLI provide syntax-based
+formatting and independent source-notice updates. They do not load application
+types. Formatting and supported notice-refresh forms are deterministic and
+idempotent. API, ownership and write behavior are defined in
+[architecture](design/docs/architecture.md).
 
-Repositories and generators share this implementation without loading application
-types. Formatting is deterministic and idempotent; source notices are maintained
-independently.
+## Stage 2: Repository and generator integration
 
-## Stage 2: Consumer release adoption
+Repositories and generators can pin the same golayout version. A separate tools
+module can isolate CLI dependencies from production packages. The shared scripts
+select repository source; generators call the in-memory APIs and retain their
+own validation and output policy. Configuration examples are in the
+[integration guide](integration.md).
 
-Use one pinned version across consumer source gates and generation steps.
-Keep CLI tooling outside dependency-free contracts. Verify each consumer's
-published dependencies with `GOWORK=off` before its release.
+## Stage 3: Policy evolution
 
-A consumer completes this stage when it builds independently and applies the
-shared policy. Verify adoption and release readiness per repository; a local
-workspace build is insufficient.
+New formatting rules require a concrete readability need. Intentional rule or
+API changes are published in a new version with their compatibility effects.
+Consumers control adoption by upgrading their pinned version; the CLI and
+library apply the same policy.
 
-## Stage 3: Policy maintenance
+## Stage 4: Versioned documentation
 
-Each new rule needs a concrete readability requirement and regression coverage.
-Version intentional policy changes, test representative consumer fixtures and
-document compatibility effects so changes can be reviewed and consumers can
-choose when to upgrade.
-
-## Stage 4: Release and documentation delivery
-
-Available: stable-tag validation, maintained English notes, reusable tagged-source
-quality checks, GitHub Releases and deployment of bilingual documentation from
-the published tag.
-
-Consumers can pin published module versions, and Pages describes released
-behavior. Every release verifies its own commit, notes and deployed site.
+Module tags provide pinnable versions. English release notes describe the
+changes, and bilingual manuals are built from the corresponding tagged source.
+Published versions and notes are listed in
+[GitHub Releases](https://github.com/longxi-go/golayout/releases).

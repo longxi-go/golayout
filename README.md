@@ -2,25 +2,20 @@
 
 [English](README.md) | [简体中文](README.zh_CN.md) | [Online manual](https://longxi-go.github.io/golayout/)
 
-golayout provides shared Go source formatting and license-header tooling for
-repositories and code generators. `pkg/format` combines AST layout rules with
-gofumpt v0.12.0. `pkg/header` updates source notices independently of formatting.
-Neither API loads application packages.
+golayout formats Go source with structural layout rules and gofumpt. Its CLI and
+in-memory libraries let repositories and code generators apply the same policy.
+A separate header operation maintains source notices from a template you supply.
 
-Requires **Go 1.27.0 or later**. This pre-v1 module may change APIs or formatting
-rules in future releases; pin a version for reproducible checks.
-
-Arrows show which APIs each entry point calls. Header handling and formatting remain separate operations.
+Requires **Go 1.27.0 or later**. Pin a golayout version to keep source checks and
+generated output reproducible; review rule and API changes when upgrading.
 
 ```mermaid
-flowchart TB
-    R["Repository checks"] --> C["cmd/golayout"]
-    G["Code generators"] --> F["pkg/format"]
-    G --> H["pkg/header"]
-    C --> F
-    C --> H
-    F --> A["internal/layout"]
-    F --> U["gofumpt v0.12.0"]
+flowchart LR
+    R["Repository checks"] -->|run| C["golayout CLI"]
+    C -->|format mode| F["pkg/format"]
+    C -->|header mode| H["pkg/header"]
+    G["Code generators"] -->|format bytes| F
+    G -->|apply a notice| H
 ```
 
 ## Install and use
@@ -28,23 +23,27 @@ flowchart TB
 Install the CLI and check explicit files:
 
 ```sh
-go install github.com/longxi-go/golayout/cmd/golayout@v0.1.3
+go install github.com/longxi-go/golayout/cmd/golayout@v0.1.4
 golayout -lang go1.27 file.go
 golayout -w -lang go1.27 file.go
 ```
 
-The default mode is read-only. Differences or invalid input produce a nonzero
-exit status; `-w` writes changes. The installation directory must be on `PATH`.
+The default mode is read-only and reports paths with differences. Differences or
+invalid input produce a nonzero exit status; `-w` writes changes. Add the
+installation directory to `PATH`.
 
-To pin the CLI as a Go module tool instead:
+To pin the CLI as a Go module tool instead, run inside your module:
 
 ```sh
-go get -tool github.com/longxi-go/golayout/cmd/golayout@v0.1.3
+go get -tool github.com/longxi-go/golayout/cmd/golayout@v0.1.4
 go tool golayout -lang go1.27 file.go
 ```
 
-For generators, add `github.com/longxi-go/golayout/pkg/format@v0.1.3` with
-`go get`, then call the in-memory API:
+Generators use `github.com/longxi-go/golayout/pkg/format`:
+
+```sh
+go get github.com/longxi-go/golayout/pkg/format@v0.1.4
+```
 
 ```go
 formatted, err := format.Source(source, format.Options{
@@ -52,29 +51,31 @@ formatted, err := format.Source(source, format.Options{
 })
 ```
 
-Here, `source` is a byte slice. Handle `err` before validating or writing the
-result. Derive `LangVersion` from the target module's `go.mod`; the value above
-is an example. See the [quick start](docs/design/docs/quick-start.md) for a
-complete program.
+`source` is a byte slice and is left unchanged. Handle `err` before validating or
+writing the result. Derive `LangVersion` from the target module's `go.mod`.
+The [quick start](docs/design/docs/quick-start.md) includes a complete program.
 
-## Formatting policy
+## Formatting rules
 
 - Expand nonempty function bodies, struct and interface declarations, and
   control-flow blocks into multiple lines.
-- Separate top-level declarations and grouped type declarations.
-- Expand named and inferred composite literals without resolving their types.
-  Explicit map, slice and array literals expand when their values include
-  composite or function literals; simple scalar collections follow gofumpt.
-- Permit canonical empty forms such as `struct{}`, `interface{}`, `select {}`
-  and empty functions.
+- Separate top-level declarations and grouped type declarations with blank lines.
+- Expand named, generic and inferred composite literals, including one-element
+  literals. Explicit map, slice and array literals expand when their values
+  include composite or function literals; simple scalar collections follow gofumpt.
+- Keep canonical empty forms such as `struct{}`, `interface{}`, `select {}`
+  and empty functions compact.
 
-Formatting does not choose package boundaries, split files or enforce every
-readability convention. See the [architecture](docs/design/docs/architecture.md)
-for the exact scope.
+Rules operate on syntax without loading packages or resolving types. A named
+literal is treated consistently whether its underlying type is a struct, map or
+slice. The formatter does not choose package boundaries, split files or wrap
+arbitrary expressions.
+See the [architecture](docs/design/docs/architecture.md) for API and write semantics.
 
-## Source license headers
+## Source notices
 
-`codequality/HEADER` supplies the plain-text notice for owned Go files:
+Create a plain-text `codequality/HEADER` with your copyright owner and license
+notice, then check or update files:
 
 ```sh
 golayout -header codequality/HEADER file.go
@@ -85,46 +86,18 @@ Header mode preserves generated markers, build constraints, package documentatio
 and the code body. It rejects replacement of a different copyright owner and
 does not format code. Run header and formatting operations separately.
 
-Generators can call `pkg/header.Source` with an explicitly selected template
-before formatting and validating output. File discovery, template loading and
-file ownership remain the caller's responsibility.
+Generators can call `pkg/header.Source` before formatting and validating output.
+The caller selects and loads the template, chooses files and owns persistence;
+golayout does not decide copyright ownership or year policy.
+See the [header API contract](docs/design/docs/architecture.md#in-memory-apis)
+for supported notice forms and refresh limitations.
 
-## Development
+## Documentation and contributing
 
-golayout can be cloned and tested independently; no workspace or sibling module
-is required. With the [development prerequisites](docs/design/docs/development.md#quality-gates)
-installed, run:
-
-```sh
-make setup
-make license-headers format
-GOWORK=off make check
-make docs-build
-```
-
-The repository gates select Git-tracked and eligible untracked source, excluding
-`.tmp`, `.cache`, vendor files and symlinks. Formatting also includes complete
-`testdata/**/*.go.tmpl` fixtures; header refreshes exclude testdata.
-Consumer setup is covered by the [integration guide](docs/integration.md).
-
-## Releases
-
-Git tags define module versions; the `go` directive in `go.mod` defines the
-minimum Go version. Branch pushes and pull requests run Quality. A `v*` tag
-starts Release, which validates stable `vX.Y.Z` input and maintained notes,
-checks the tagged source, publishes a GitHub Release and deploys its documentation.
-Published tags must not be moved or reused.
-
-[GitHub Releases](https://github.com/longxi-go/golayout/releases) contains version
-history. Each version has English notes under [`docs/releases`](docs/releases);
-the [release guide](docs/design/docs/development.md#releases) describes the process.
-
-## Documentation
-
-- [English manual](https://longxi-go.github.io/golayout/)
-- [简体中文手册](https://longxi-go.github.io/golayout/zh/)
-- [Site maintenance](docs/design/README.md)
-- [Roadmap](docs/roadmap.md)
-
-Use `make docs-serve` to preview changes locally. CI builds documentation on
-branches; Pages is updated when a stable release is published and deployed.
+- [Quick start](docs/design/docs/quick-start.md): CLI and library examples.
+- [Integration guide](docs/integration.md): repository gates and generator adoption.
+- [Architecture](docs/design/docs/architecture.md): rules, API boundaries and failures.
+- [Development guide](docs/design/docs/development.md): contributor setup and quality gates.
+- [Documentation maintenance](docs/design/README.md): build and preview the bilingual manual.
+- [Roadmap](docs/roadmap.md): capabilities and policy evolution.
+- [GitHub Releases](https://github.com/longxi-go/golayout/releases): version history.

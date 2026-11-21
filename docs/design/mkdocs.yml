@@ -1,10 +1,10 @@
 site_name: golayout Guide
-site_description: Shared Go source formatting and license-header tooling
+site_description: Go source formatting and source-header APIs for repositories and code generators
 site_url: !ENV [DOCS_SITE_URL, "https://longxi-go.github.io/golayout/"]
-site_author: The longxi-go Authors
+site_author: The longxi-go/golayout Authors
 repo_name: longxi-go/golayout
 repo_url: https://github.com/longxi-go/golayout
-copyright: Copyright &copy; 2026 - present The longxi-go Authors
+copyright: Copyright &copy; 2026 - present The longxi-go/golayout Authors
 
 validation:
   links:
@@ -59,13 +59,13 @@ plugins:
           name: 简体中文
           build: true
           site_name: golayout 使用手册
-          site_description: 统一的 Go 源码格式化与文件头工具
+          site_description: 面向 Go 仓库与代码生成器的源码格式化和文件头工具
           nav:
             - 概览: index.md
             - 开始使用:
                 - 快速开始: quick-start.md
-            - 项目维护:
                 - 架构: architecture.md
+            - 参与开发:
                 - 开发指南: development.md
           theme:
             language: zh
@@ -104,6 +104,6 @@ nav:
   - Overview: index.md
   - Getting Started:
       - Quick Start: quick-start.md
-  - Project:
       - Architecture: architecture.md
+  - Contributing:
       - Development: development.md

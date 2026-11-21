@@ -1,18 +1,18 @@
 # Quick start
 
-Requires Go 1.27.0 or later. A workspace is not required.
+Requires Go 1.27.0 or later.
 
 ## Install the CLI
 
 ```sh
-go install github.com/longxi-go/golayout/cmd/golayout@v0.1.3
+go install github.com/longxi-go/golayout/cmd/golayout@v0.1.4
 ```
 
 Add `GOBIN`, or `$(go env GOPATH)/bin` when `GOBIN` is unset, to `PATH`.
 To manage the CLI as a module tool instead, run this inside that module:
 
 ```sh
-go get -tool github.com/longxi-go/golayout/cmd/golayout@v0.1.3
+go get -tool github.com/longxi-go/golayout/cmd/golayout@v0.1.4
 go tool golayout -lang go1.27 path/to/file.go
 ```
 
@@ -26,15 +26,16 @@ golayout -w -lang go1.27 path/to/file.go
 ```
 
 The first command is read-only. Differences and invalid input return a nonzero
-exit status. `-w` writes changes. From a source checkout, use
-`go run ./cmd/golayout` in place of `golayout`.
+exit status. `-w` writes changes. Directories and symlinks are rejected.
+All input is validated before writes begin; a later write failure may leave
+earlier files replaced. See [file write behavior](architecture.md#cli-and-file-writes).
 
 ## Use the library
 
 In an existing Go module, add the formatting package:
 
 ```sh
-go get github.com/longxi-go/golayout/pkg/format@v0.1.3
+go get github.com/longxi-go/golayout/pkg/format@v0.1.4
 ```
 
 Save this program as `main.go` and run `go run .`:
@@ -67,8 +68,17 @@ unchanged. Generators should derive `LangVersion` from the target module's
 
 ## Maintain source notices
 
-Create a plain-text `codequality/HEADER` with the repository's copyright owner
-and license notice, then run:
+Create a plain-text `codequality/HEADER` with your copyright owner and license
+notice. For example:
+
+```text
+Copyright © 2026 the example authors.
+
+SPDX-License-Identifier: Apache-2.0
+```
+
+The first line must be a copyright line without Go comment markers. Check or
+apply the notice with:
 
 ```sh
 golayout -header codequality/HEADER path/to/file.go
@@ -79,5 +89,5 @@ The default is read-only. Header mode preserves the code body and rejects
 replacing a different owner. It cannot be combined with `-lang`; run formatting
 separately. Generators can use `pkg/header.Source` before formatting.
 
-Repository-wide selection and local quality checks are covered by the
-[development guide](development.md).
+See [API contracts](architecture.md#in-memory-apis) for supported header forms,
+template validation, error behavior and the limits of syntax-based formatting.

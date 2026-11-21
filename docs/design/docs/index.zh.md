@@ -1,36 +1,32 @@
 # Go 格式化与源码文件头
 
-**golayout** 为 Go 仓库和代码生成器提供统一的格式化库、源码文件头库及 CLI。
+**golayout** 通过 CLI 与内存 API，让 Go 仓库和代码生成器使用同一套源码格式化策略。
 要求 Go 1.27.0 或更高版本。
 
 [开始使用](quick-start.md){ .md-button .md-button--primary }
-[阅读架构](architecture.md){ .md-button }
-
-箭头表示对共享 API 的调用，文件头模式与格式化模式分别执行。
+[格式规则与使用约定](architecture.md){ .md-button }
 
 ```mermaid
-flowchart TB
-    R["仓库检查"] --> C["cmd/golayout"]
-    G["代码生成器"] --> F["pkg/format"]
-    G --> H["pkg/header"]
-    C --> F
-    C --> H
-    F --> A["internal/layout"]
-    F --> U["gofumpt v0.12.0"]
+flowchart LR
+    R["仓库检查"] -->|运行| C["golayout CLI"]
+    C -->|格式化模式| F["pkg/format"]
+    C -->|文件头模式| H["pkg/header"]
+    G["代码生成器"] -->|格式化字节| F
+    G -->|应用文件头| H
 ```
 
-| 组件 | 职责 |
+| 用途 | 入口 |
 | --- | --- |
-| `pkg/format` | 使用 AST 布局规则与 gofumpt v0.12.0 格式化源码字节 |
-| `pkg/header` | 应用显式文件头模板，不格式化代码 |
-| `internal/layout` | 实现结构规则，不加载应用类型 |
-| `internal/command` | 校验显式文件、报告差异并写入替换内容 |
-| `cmd/golayout` | 提供 CLI 入口 |
-| 仓库脚本 | 按项目维护范围和排除规则选择文件 |
+| 检查或重写显式指定的源码文件 | `golayout [-w] -lang go1.27 file.go` |
+| 在内存中格式化生成代码 | `pkg/format.Source` |
+| 根据项目模板检查或刷新文件头 | `golayout [-w] -header codequality/HEADER file.go` |
+| 在格式化生成代码前应用文件头 | `pkg/header.Source` |
 
-非空函数体、结构体和接口声明、控制流代码块采用多行布局；空代码块、声明和字面量可以保留单行。
-复合字面量按语法分类处理，详见[格式规则](architecture.md#formatting-rules)。
-文件职责划分和逻辑换行仍需人工审查。
+非空函数体、结构体和接口声明、控制流代码块采用多行布局；空形式可以保留紧凑布局。
+复合字面量按语法分类处理，不加载包或解析类型。完整策略见[格式规则](architecture.md#formatting-rules)。
 
-生成器调用公开库，仓库检查使用 CLI 和共享脚本，两者应固定同一个 golayout 版本。
-本模块可以独立使用，不依赖 gosr、ioc 或 nemo。
+文件头处理独立于格式化。调用方提供模板，负责文件选择、版权归属和结果保存。
+生成器按需应用文件头，完成格式化后执行自身的验证与输出步骤。
+
+仓库检查和生成代码应固定同一个 golayout 版本，升级时需审查规则与 API 的变化。
+贡献者工作流程见[开发指南](development.md)。

@@ -1,23 +1,38 @@
 # 架构
 
-## 内存 API
+<a id="in-memory-apis"></a>
 
-`pkg/format.Source` 校验可选语言版本，应用 AST 布局规则，再调用 gofumpt v0.12.0。
-它不加载应用包，也不解析类型。各次调用彼此独立，不修改输入字节。
-语法无效时返回错误，不返回格式化结果。
+## 内存 API
 
 ```mermaid
 flowchart TB
     S["源码字节"] --> V{"语言选项与语法有效？"}
     V -->|是| L["AST 布局"]
-    L --> G["gofumpt v0.12.0"]
+    L --> G["gofumpt"]
     G --> F["格式化字节"]
     V -->|否| E["返回错误，不返回格式化结果"]
 ```
 
-`pkg/header.Source` 使用调用方传入的纯文本文件头模板，与格式化分开执行。
+`pkg/format.Source(input, options)` 应用 AST 布局规则后，再调用 gofumpt。
+`Options.LangVersion` 指定目标 Go 语言版本，例如 `go1.27`；空值使用格式化器的默认行为。
+语言版本或语法无效时返回错误，不返回格式化结果。格式化不加载包或解析类型，
+生成器仍需自行执行类型验证。
+
+`pkg/header.Source(source, notice)` 使用调用方传入的纯文本文件头模板，与格式化分开执行。
 它保留代码体、包注释、构建约束和生成标记，拒绝覆盖其他版权主体的声明，
 也不推断模板、版权主体或年份策略。是否读取模板、使用哪份模板，由调用方决定。
+两个 API 均不修改输入字节，不访问文件系统，各次调用彼此独立。
+
+文件头模板必须是无 NUL 字节的 UTF-8 文本，第一行为纯文本版权行。
+支持的年份形式包括 `2026`、`2026-2027` 和 `2026-present`。
+例如，`Copyright © 2026 the example authors.` 标识版权主体，后续行提供许可证声明。
+不要在模板外加 `//` 或 `/* */` 注释标记，库会添加 Go 行注释。
+Go 语法无效、版权行不受支持、识别到其他版权主体、Apache 行注释声明不完整或存在多个生成标记时，
+返回错误且不返回结果。Apache 行注释声明不完整时直接拒绝处理，不会猜测许可证文本的结束位置。
+
+已有的行注释文件头支持三种形式：单独的版权行、版权行后接 SPDX 标识符、完整的 Apache 声明。
+其他许可证正文会作为周边注释保留，反复更新可能产生重复文本。需要反复刷新文件头时，
+应使用上述支持的形式。
 
 <a id="formatting-rules"></a>
 
@@ -38,6 +53,8 @@ flowchart TB
 格式化不会为了展开空形式而添加语句或注释。
 
 格式化具有确定性和幂等性。包边界、文件拆分和逻辑换行仍需人工审查。
+
+<a id="cli-and-file-writes"></a>
 
 ## CLI 与文件写入
 
@@ -61,16 +78,34 @@ flowchart TB
 
 ## 仓库接入
 
-共享脚本选择 Git 已跟踪文件和符合条件的未跟踪源码，排除 `.tmp`、`.cache`、vendor 文件和符号链接。
-格式化包括可作为 Go 源码解析的完整 `testdata/**/*.go.tmpl` 样本；文件头刷新排除全部 testdata。
-普通测试输入和生产生成器模板不会自动参与格式化。
+```mermaid
+flowchart LR
+    S["渲染后的 Go 源码"] --> H{"需要文件头？"}
+    H -->|是| N["pkg/header.Source"]
+    H -->|否| F["pkg/format.Source"]
+    N --> F
+    F --> V["生成器验证"]
+    V --> W["生成器输出"]
+```
 
-生成器需要文件头时先调用 `pkg/header`，再调用 `pkg/format`，最后执行自身的验证和输出步骤。
-仓库检查通过 CLI 使用相同版本。使用方不得复制私有规则或格式化实现。
+每一步成功后才能将结果交给下一步。生成器选择目标语言和模板，验证格式化后的结果并负责保存。
+两个库均不执行输入代码。
+
+仓库检查通过 CLI 使用同一个 golayout 版本。文件选择位于库之外，应复用共享实现，
+避免复制私有规则。仓库脚本的选择策略见[开发指南](development.md#source-selection)。
 
 ## 依赖方向
 
-golayout 依赖固定版本的 gofumpt 及其依赖，不依赖 gosr、ioc、nemo 或应用源码。
-`pkg/format` 组合私有布局实现；`pkg/header` 独立于格式化。命令层将文件操作与这些公开 API 组合。
+```mermaid
+flowchart TB
+    C["cmd/golayout"] -->|委托| R["internal/command"]
+    R -->|格式化模式| F["pkg/format"]
+    R -->|文件头模式| H["pkg/header"]
+    F -->|结构规则| L["internal/layout"]
+    F -->|最终格式化| G["gofumpt"]
+```
+
+`pkg/header` 独立于格式化。`pkg/format` 组合私有布局规则与 `go.mod` 固定的 gofumpt 依赖，
+gofumpt 可选的 `-extra` 规则未启用。两个 API 均不依赖应用模块。
 
 编辑器启用 gofumpt 后，仅应用 gofumpt 自身的规则；完整的结构布局规则仍需通过 golayout 检查。

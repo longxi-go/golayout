@@ -4,7 +4,8 @@
 
 ## 质量检查
 
-开发需要 Git、Bash、Make 和 Go。CI 使用 Go 1.27.0 检查兼容性，使用 Go 1.27.4 执行完整质量检查。
+开发需要 Git、Bash、Make，以及 `.github/workflows/quality.yml` 选定的 Go 版本。
+最低语言版本由 `go.mod` 声明。
 安装 `.github/workflows/quality.yml` 指定的 linter 版本：
 
 ```sh
@@ -26,11 +27,23 @@ GOWORK=off make check
 随机顺序的 race 测试、lint 及工具测试；执行过程可能写入工具缓存。
 单独的检查目标见 `make help`。
 
+<a id="source-selection"></a>
+
+## 文件选择
+
+仓库脚本选择 Git 已跟踪文件和符合条件的未跟踪 Go 文件，排除被忽略的未跟踪文件。
+格式化跳过 `.tmp`、`.cache`、vendor 文件和符号链接。
+完整且可作为 Go 源码解析的 `testdata/**/*.go.tmpl` 样本参与格式化；
+其他 testdata 文件和生产生成器模板不参与。
+
+文件头刷新读取 `codequality/HEADER`，并额外排除 `.codex` 和全部 testdata。
+第三方源码不应进入项目维护的文件清单。识别到其他版权主体时应处理报错，不得擅自改写归属。
+CLI 本身仅接受显式指定的普通文件，不负责发现仓库文件。
+
 <a id="local-workspace"></a>
 
 ## 本地工作区
 
-golayout 不依赖其他生态仓库，可以单独测试。
 需要联调使用方时，在两个工程的父目录创建工作区：
 
 ```sh
@@ -58,59 +71,3 @@ make docs-build
 英文预览地址为 `http://127.0.0.1:8000/golayout/`，中文位于 `/golayout/zh/`。
 站点源码位于 `docs/design/docs`。新增页面需同时提供 `page.md` 和 `page.zh.md`，
 并更新 `mkdocs.yml` 的两份导航。生成的 HTML 和虚拟环境不纳入版本控制。
-
-提交文档前，应对照实现审查两个语言版本，核对前提条件、命令执行位置、API 行为、限制、版本和链接。
-构建成功表示文档可以渲染，技术准确性和翻译质量仍需人工审查。
-
-<a id="releases"></a>
-
-## 版本发布
-
-```mermaid
-flowchart TB
-    B["分支推送或 Pull Request"] --> Q["Quality"]
-    Q --> D["构建文档，不部署"]
-    T["推送 vX.Y.Z"] --> V["校验 tag 与版本说明"]
-    V --> R["检查 tag 对应的源码"]
-    R --> G["GitHub Release"]
-    G --> P["从同一 tag 构建并部署 Pages"]
-    X["手动执行 Docs Pages"] --> E["要求已有稳定 Release，并检出其 tag"]
-    E --> P
-```
-
-Git tag 定义模块版本，`go.mod` 的 `go` 指令定义最低 Go 版本，文档工程版本不控制模块发布。
-每个版本的英文说明保存在 `docs/releases/vX.Y.Z.md`，以 `# golayout vX.Y.Z` 开头，正文不能为空。
-README 说明使用方法和发布流程；版本历史由这些说明和 GitHub Releases 记录。
-
-1. 添加该版本说明，同步更新两个语言版本的安装示例。
-2. 审查完整差异，包括文档准确性和双语一致性。
-3. 执行 `GOWORK=off make check docs-build validate-release TAG=vX.Y.Z`，
-   将 `vX.Y.Z` 替换为待发布版本。
-4. 提交并推送已审查文件，等待该提交的 Quality 检查通过。
-5. 在同一提交上创建附注 tag，附注内容为 `Release golayout vX.Y.Z`，然后推送 tag。
-6. 核对 Release 工作流、已发布说明和 Pages 内容。
-
-推送 `v*` tag 会触发 Release。校验仅接受稳定版本 `vX.Y.Z`，不允许前导零、预发布后缀或构建元数据。
-v2 及后续版本需要为模块路径添加版本后缀，并调整发布策略。当前 v0.x 版本仍可能调整 API 或格式规则。
-
-Release 通过可复用的 Quality 检查 tag 源码，发布 GitHub Release，然后部署同一 tag 的文档。
-Go 模块代理在 tag 推送后即可解析该版本，不依赖 GitHub Release 是否成功。
-已发布 tag 不得移动或复用。工作流失败时应解决原因并重跑失败任务，不得覆盖已有 Release。
-
-## Pages 发布
-
-Pages 提供[英文手册](https://longxi-go.github.io/golayout/)和[中文手册](https://longxi-go.github.io/golayout/zh/)。
-分支推送和 Pull Request 只构建文档，不执行部署；Release 发布稳定版本的 GitHub Release 后部署文档。
-
-手动执行 Docs Pages 时，`release_tag` 必须指向已公开发布的稳定版本，工作流会检出该 tag。
-自动部署要求 `github-pages` 环境允许 `v*` tag；从 `main` 手动执行时，还需允许该分支。
-Pages 的 Source 使用 GitHub Actions。
-
-部署任务具有 Pages 和 OIDC 权限，Quality 仅有仓库只读权限。
-Release 直接调用 Docs Pages，不依赖 `GITHUB_TOKEN` 再次产生事件触发部署。
-
-发布构建从 `configure-pages` 获取基础 URL。自定义域名或预览路径可通过 `DOCS_SITE_URL` 覆盖，
-值需要以斜杠结尾。
-
-Material 在浏览器中从 GitHub 请求最新稳定 Release、Star 数和 Fork 数。
-Release 标签反映仓库信息，不代表当前页面的源码版本；请求失败时仍可使用仓库链接。

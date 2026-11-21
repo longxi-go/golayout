@@ -1,38 +1,36 @@
 # Go formatting and source notices
 
-**golayout** provides a shared formatting library, a source-notice library and a
-CLI for Go repositories and code generators. It requires Go 1.27.0 or later.
+**golayout** gives Go repositories and code generators the same source-formatting
+policy through a CLI and in-memory APIs. It requires Go 1.27.0 or later.
 
 [Get started](quick-start.md){ .md-button .md-button--primary }
-[Read the architecture](architecture.md){ .md-button }
-
-Arrows show calls to shared APIs; header and format modes are separate.
+[Formatting rules and contracts](architecture.md){ .md-button }
 
 ```mermaid
-flowchart TB
-    R["Repository checks"] --> C["cmd/golayout"]
-    G["Code generators"] --> F["pkg/format"]
-    G --> H["pkg/header"]
-    C --> F
-    C --> H
-    F --> A["internal/layout"]
-    F --> U["gofumpt v0.12.0"]
+flowchart LR
+    R["Repository checks"] -->|run| C["golayout CLI"]
+    C -->|format mode| F["pkg/format"]
+    C -->|header mode| H["pkg/header"]
+    G["Code generators"] -->|format bytes| F
+    G -->|apply a notice| H
 ```
 
-| Component | Responsibility |
+| Use case | Entry point |
 | --- | --- |
-| `pkg/format` | Format source bytes using AST layout rules and gofumpt v0.12.0 |
-| `pkg/header` | Apply an explicit source-notice template without formatting code |
-| `internal/layout` | Implement structural rules without loading application types |
-| `internal/command` | Validate explicit files, report differences and write replacements |
-| `cmd/golayout` | Provide the CLI entry point |
-| Repository scripts | Select owned files and apply repository exclusions |
+| Check or rewrite explicit source files | `golayout [-w] -lang go1.27 file.go` |
+| Format generated source in memory | `pkg/format.Source` |
+| Check or refresh notices from your template | `golayout [-w] -header codequality/HEADER file.go` |
+| Apply a notice before formatting generated code | `pkg/header.Source` |
 
 Nonempty function bodies, struct and interface declarations, and control-flow
 blocks use multiple lines. Empty forms may remain compact. Composite literal
-rules depend on syntax; see [formatting rules](architecture.md#formatting-rules).
-File boundaries and manual line wrapping remain design and review decisions.
+rules depend on syntax and do not load packages or resolve types.
+See [formatting rules](architecture.md#formatting-rules) for the full policy.
 
-Generators call the public libraries; repository gates use the CLI and shared
-scripts. Pin the same golayout version for both paths. The module works
-independently of gosr, ioc and nemo.
+Header handling is separate from formatting. You supply the template and retain
+control of file selection, copyright ownership and persistence. Generators apply
+an optional notice, format, then perform their own validation and output steps.
+
+Pin the same golayout version for repository checks and generated output. Review
+rule and API changes when upgrading. Contributor workflows are in the
+[development guide](development.md).
