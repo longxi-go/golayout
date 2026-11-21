@@ -1,41 +1,78 @@
 # 快速开始
 
-使用 go.mod 指定的 Go 版本，当前最低为 Go 1.27.0。在本仓库运行：
+要求 Go 1.27.0 或更高版本，不需要工作区。
+
+## 安装 CLI
 
 ```sh
-make setup
-make format
-make check-format
-make check
+go install github.com/longxi-go/golayout/cmd/golayout@v0.1.1
 ```
 
-## 检查或重写显式文件
-
-v0.1.0 发布后可用 `go install github.com/longxi-go/golayout/cmd/golayout@v0.1.0` 安装，
-或在工具模块中运行 `go get -tool github.com/longxi-go/golayout/cmd/golayout@v0.1.0`，
-通过 `go tool golayout` 调用。在本仓库中可直接运行：
+将 `GOBIN` 加入 `PATH`；未设置 `GOBIN` 时，使用 `$(go env GOPATH)/bin`。
+也可以在模块内将 CLI 声明为模块工具：
 
 ```sh
-go run ./cmd/golayout -lang go1.27 path/to/file.go
-go run ./cmd/golayout -w -lang go1.27 path/to/file.go
+go get -tool github.com/longxi-go/golayout/cmd/golayout@v0.1.1
+go tool golayout -lang go1.27 path/to/file.go
 ```
 
-第一条命令只读检查，存在格式差异时以非零状态退出；`-w` 才执行写入。
-命令至少接收一个显式文件，仓库文件发现仍由调用方负责。
+## 检查或重写文件
 
-## 接入生成器
+已安装的 CLI 接收一个或多个显式文件：
 
-导入 `github.com/longxi-go/golayout/pkg/format`：
+```sh
+golayout -lang go1.27 path/to/file.go
+golayout -w -lang go1.27 path/to/file.go
+```
+
+第一条命令只读检查。存在差异或输入无效时返回非零退出状态；`-w` 才写入修改。
+在源码仓库中，可以用 `go run ./cmd/golayout` 替代 `golayout`。
+
+## 使用库
+
+在已有 Go 模块中添加格式化包：
+
+```sh
+go get github.com/longxi-go/golayout/pkg/format@v0.1.1
+```
+
+将以下程序保存为 `main.go`，执行 `go run .`：
 
 ```go
-formatted, err := format.Source(source, format.Options{
-    LangVersion: "go1.27",
-})
+package main
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/longxi-go/golayout/pkg/format"
+)
+
+func main() {
+	source := []byte("package sample\nfunc Ready() bool { return true }\n")
+	formatted, err := format.Source(source, format.Options{
+		LangVersion: "go1.27",
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Print(string(formatted))
+}
 ```
 
-此处是代码片段，`source` 为生成器拥有的字节切片。处理错误后再验证或写出 `formatted`，
-输入字节不会被修改。实际目标语言应从使用方 go.mod 推导；示例字面量仅展示选项，
-不能用生成器自身工具链版本代替目标应用版本。
+输出中的 `Ready` 函数采用多行布局。`Source` 不修改输入字节。
+生成器应从目标模块的 `go.mod` 推导 `LangVersion`，处理错误后再验证并保存结果。
 
-公开 API 应在类型验证及输出前调用。源码检查使用同一模块版本，并保留使用方自己的文件排除策略。
-golayout 不需要其他同级模块，生态联调可参考可选的[本地工作区说明](development.md#local-workspace)。
+## 维护源码文件头
+
+创建纯文本 `codequality/HEADER`，写入项目的版权主体和许可证声明，然后执行：
+
+```sh
+golayout -header codequality/HEADER path/to/file.go
+golayout -w -header codequality/HEADER path/to/file.go
+```
+
+默认只读检查。文件头模式保留代码体，拒绝覆盖其他版权主体的声明。
+它不能与 `-lang` 合用，格式化需要单独执行。生成器可在格式化前调用 `pkg/header.Source`。
+
+仓库批量文件选择和本地质量检查见[开发指南](development.md)。

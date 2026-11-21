@@ -1,52 +1,82 @@
 # Integrating golayout
 
-Each consumer declares golayout in go.mod (or its nested tools module). Local
-multi-repository development selects the sibling module through a parent go.work;
-do not put developer-specific local replace directives in production go.mod files.
-Use the published `v0.1.0` tag after its release; before publication only local
-workspace selection can resolve it. Standalone consumers require the published
-tag and matching go.sum checksums. golayout itself builds independently of the
-ecosystem workspace. Never move a published tag to change a formatting policy.
+[English](integration.md) | [简体中文](integration.zh.md)
 
-```go
-require github.com/longxi-go/golayout v0.1.0
+## Pin the tool and library
 
-tool github.com/longxi-go/golayout/cmd/golayout
+Use an immutable published version for both source checks and generated output.
+In the module that owns the tool dependency:
+
+```sh
+go get -tool github.com/longxi-go/golayout/cmd/golayout@v0.1.1
 ```
 
-Go source targets the module language version, such as `go1.27`. A Makefile
-should pass an explicit inventory of tracked and unignored Go files, excluding
-snapshots, caches, vendor and ordinary testdata. Complete parseable Go sources
-under `testdata/**/*.go.tmpl` explicitly opt into the same format/check gates.
-Production generator templates outside testdata stay excluded. Delegate
-format/check/setup to scripts in the selected golayout module. Consumer Makefiles
-resolve its directory with go list -m, supporting workspace and module-cache sources. The check path must not install
-consumer-local binaries or rewrite source/module files.
+Generators import `github.com/longxi-go/golayout/pkg/format`; they must declare
+the same module version. Keep developer-specific directory replacements out of
+production `go.mod`. A parent `go.work` can select a local checkout during development.
 
-Generators call `github.com/longxi-go/golayout/pkg/format.Source` on output
-bytes before validation and persistence. They must not run the CLI as a
-subprocess or import a consumer's private formatter implementation.
+For dependency-free contract modules such as gosr, put CLI tooling in a separate
+`tools` module. Include that module explicitly in local workspaces.
 
-CI checks out golayout at the same immutable commit/tag as the consumer's
-module requirement. For a sibling checkout, place it alongside the consumer
-repository and add its `go.mod` to the Go cache dependency paths. If golayout
-is private, configure a read token that can access the shared repository.
+## Delegate repository checks
 
-For gosr, keep formatter tooling in the nested `tools` module. This prevents
-the standards/contracts module from depending on developer tooling.
+The following Makefile fragment uses shared scripts from the selected module.
+Run it at the consuming repository's root. Set `GOLAYOUT_TOOL_MODULE=tools` when
+the tool is declared in a nested tools module:
 
-## Readable Go test fixtures
+```makefile
+GO ?= go
+GOLAYOUT_TOOL_MODULE ?= .
+GOLAYOUT_DIR := $(shell $(GO) -C "$(GOLAYOUT_TOOL_MODULE)" list -m \
+    -f '{{.Dir}}' github.com/longxi-go/golayout)
+GO_LANG_VERSION := go$(shell awk '$$1 == "go" { print $$2; exit }' go.mod)
 
-Keep substantial test programs in per-scenario `testdata/.../*.go.tmpl` files,
-with normal imports, declarations, comments and multiline blocks. Tests read
-static files directly; use strict template rendering only for actual variables.
-Go ignores testdata during package discovery, and the .tmpl suffix keeps these
-sources from being compiled as part of the host test package.
+.PHONY: setup format check-format
 
-The shared selector includes this opt-in extension in both root and nested
-testdata directories. Fixtures must parse as Go before substitutions; use template
-actions inside import strings/comments or explicit valid identifier placeholders
-when necessary. Intentionally malformed syntax and formatter-input samples should
-keep a different extension (for example .go.txt) or a short inline literal, so a
-format pass cannot erase the condition the test is meant to exercise. Neither
-production generator templates nor every file in testdata is auto-formatted.
+setup:
+	@GO="$(GO)" bash "$(GOLAYOUT_DIR)/scripts/format.sh" setup \
+	    "$(CURDIR)" "$(GOLAYOUT_TOOL_MODULE)" "$(GO_LANG_VERSION)"
+
+format:
+	@GO="$(GO)" bash "$(GOLAYOUT_DIR)/scripts/format.sh" write \
+	    "$(CURDIR)" "$(GOLAYOUT_TOOL_MODULE)" "$(GO_LANG_VERSION)"
+
+check-format:
+	@GO="$(GO)" bash "$(GOLAYOUT_DIR)/scripts/format.sh" check \
+	    "$(CURDIR)" "$(GOLAYOUT_TOOL_MODULE)" "$(GO_LANG_VERSION)"
+```
+
+The script selects Git-tracked and eligible untracked Go files, excludes `.tmp`,
+`.cache`, vendor files and symlinks, and includes complete `testdata/**/*.go.tmpl`
+fixtures. Other testdata files and production generator templates stay excluded.
+`setup` verifies dependencies; `check-format` does not rewrite source or module files.
+
+The language option comes from the consumer's `go.mod`, not the formatter's
+build toolchain. Keep generated-source formatting on the same version. CI must
+check out shared tooling at the immutable revision required by the consumer;
+include both modules' dependency files in cache keys when using sibling checkouts.
+
+## Format generated output
+
+Call `pkg/format.Source` before the generator's type validation and file write.
+Pass source bytes and the target module's language version. Handle errors before
+using the result. Do not invoke the CLI as a generation subprocess or copy
+private formatting code into a consumer.
+
+For source notices, load the target repository's template explicitly and call
+`pkg/header.Source` before formatting. The caller decides whether a template is
+required and how an absent template is handled; golayout does not select ownership.
+Repository-wide header scripts read the consumer's `codequality/HEADER` and exclude
+all testdata. Their check and write modes are separate from formatting.
+
+## Maintain readable fixtures
+
+Store substantial Go test programs as per-scenario `testdata/<scenario>/*.go.tmpl`
+files. Read static fixtures directly; use a strict template renderer only when
+substitutions are required. The suffix prevents Go package discovery from compiling
+the fixture as host test code.
+
+These files opt into formatting and must parse as Go before template execution.
+Place template actions inside strings or comments, or use valid identifier
+placeholders. Keep deliberately invalid syntax and formatter-input samples in
+`.go.txt` files or short inline literals so formatting cannot erase the test case.

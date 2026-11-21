@@ -1,44 +1,52 @@
 # 开发指南
 
-## 本地工作区 {#local-workspace}
+<a id="quality-gates"></a>
 
-golayout 可以单独克隆和验证，不依赖 gosr、ioc 或 nemo。
-使用 `GOWORK=off make check` 验证独立模块。可选的生态联调才需要同级目录及本地工作区：
+## 质量检查
+
+开发需要 Git、Bash、Make 和 Go。CI 使用 Go 1.27.0 检查兼容性，使用 Go 1.27.4 执行完整质量检查。
+安装 `.github/workflows/quality.yml` 指定的 linter 版本：
 
 ```sh
-go work init ./golayout ./gosr ./gosr/tools ./ioc ./nemo
-go work edit -replace=github.com/longxi-go/gosr@v0.0.0=./gosr
-go work edit -replace=github.com/longxi-go/gosr/tools@v0.0.0=./gosr/tools
+go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0
 ```
 
-已有工作区使用 `go work use` 扩展，`gosr/tools` 必须单独纳入。
-go.work 和 go.work.sum 保持本地使用，生产 go.mod 不应包含同级目录 replace。
-在每个仓库/模块内部执行 Go 检查。
-
-其他模块尚未发布的依赖仍可通过本地工作区替换进行开发，但不能据此声称它们已具备独立发布能力。
-golayout 自身的模块检查不受这些占位依赖影响。
-
-## 质量门禁
-
-完整质量检查使用 Go 1.27.4，最低兼容版本为 Go 1.27.0。
-本地安装配置要求的 golangci-lint，当前为 v2.15.0。
+确保 `golangci-lint` 位于 `PATH` 中，或通过 `GOLANGCI_LINT` 指定可执行文件。
+在仓库根目录执行：
 
 ```sh
 make setup
-make format
-make check-format
-make license-headers
-make check-license-headers
-make check
+make license-headers format
+GOWORK=off make check
 ```
 
-完整门禁包括模块整洁性、vet、覆盖率测试、随机顺序 race、lint、代码布局、文件头及发布校验测试。
-检查实际输出；本地执行不等于远程 CI 已通过。
+`setup` 解析格式化工具依赖，不安装二进制或修改模块文件。
+`license-headers` 和 `format` 写入项目拥有的源码。
+`check` 对源码执行只读检查，涵盖文件头、布局、模块依赖整洁性、vet、带覆盖率的单元测试、
+随机顺序的 race 测试、lint 及工具测试；执行过程可能写入工具缓存。
+单独的检查目标见 `make help`。
 
+<a id="local-workspace"></a>
+
+## 本地工作区
+
+golayout 不依赖其他生态仓库，可以单独测试。
+需要联调使用方时，在两个工程的父目录创建工作区：
+
+```sh
+go work init ./golayout ./consumer
+```
+
+将 `./consumer` 替换为实际路径。已有工作区使用 `go work use` 扩展。
+独立 tools 模块等嵌套模块需要显式加入。`go.work` 和 `go.work.sum` 仅供本地使用；
+生产 `go.mod` 不得包含开发者专属的目录替换。
+
+在各模块内部运行检查。工作区构建不能证明使用方声明的依赖版本可独立解析，
+此项检查需要设置 `GOWORK=off`。
 
 ## 文档
 
-Python 3.12 和 uv 可独立于 Go 依赖构建站点：
+站点需要 Python 3.12 和 uv。在仓库根目录执行：
 
 ```sh
 make docs-setup
@@ -46,37 +54,48 @@ make docs-serve
 make docs-build
 ```
 
-最后一条命令使用锁定依赖严格构建双语内容。源码位于 `docs/design/docs`，新增页面同时提供
-`page.md` 和 `page.zh.md`，并更新两份导航。API 示例应与当前源码一致，HTML 产物及虚拟环境保持忽略。
+`docs-build` 使用锁定依赖和严格校验。
+英文预览地址为 `http://127.0.0.1:8000/golayout/`，中文位于 `/golayout/zh/`。
+站点源码位于 `docs/design/docs`。新增页面需同时提供 `page.md` 和 `page.zh.md`，
+并更新 `mkdocs.yml` 的两份导航。生成的 HTML 和虚拟环境不纳入版本控制。
 
-## 版本发布 {#releases}
+提交文档前，应依据实现审查两个语言版本，核对前提、命令执行位置、API 行为、限制、版本和链接。
+构建成功只能证明可渲染，不能证明事实或翻译准确。
 
-Go 模块版本由不可变 Git tag 决定，go.mod 中的 `go` 是最低 Go 版本，文档工程版本也不是模块版本。
-不需要 Maven/npm 注册步骤。v0.x 为 pre-v1，后续版本可能有意调整 API 或格式策略。
+<a id="releases"></a>
 
-1. 审查代码和英文 `docs/releases/vX.Y.Z.md` 发布说明。
-2. 运行 `GOWORK=off make check docs-build validate-release TAG=vX.Y.Z`。
-3. 提交并推送已审查源码，等待分支 Quality 成功。
-4. 在该提交创建带英文说明的稳定 tag，并推送 tag。
+## 版本发布
 
-Release 校验稳定 SemVer 和对应说明的标题/正文，复用 Quality 校验 tag 源码，发布 GitHub Release，
-然后调用 Docs Pages。非法、预发布、构建元数据 tag 均失败；v2+ 需要显式调整模块路径。
-分发方式是 GitHub 源码归档及 Go module proxy；CLI 使用 `go install .../cmd/golayout@vX.Y.Z`。
-已发布 tag 不应移动或复用；失败时可重跑失败任务，不能悄悄覆盖已有 Release。
+Git tag 定义模块版本，`go.mod` 的 `go` 指令定义最低 Go 版本，文档工程版本不控制模块发布。
+每个版本在 `docs/releases/vX.Y.Z.md` 保存英文说明，以 `# golayout vX.Y.Z` 开头并包含非空正文。
+README 说明使用方法和发布流程；版本历史由这些说明和 GitHub Releases 记录。
+
+1. 添加该版本说明，同步更新两个语言版本的安装示例。
+2. 审查完整差异，包括文档准确性和双语一致性。
+3. 执行 `GOWORK=off make check docs-build validate-release TAG=vX.Y.Z`，
+   将 `vX.Y.Z` 替换为待发布版本。
+4. 提交并推送已审查文件，等待该提交的 Quality 检查通过。
+5. 在同一提交上创建附注 tag，说明使用 `Release golayout vX.Y.Z`，然后推送 tag。
+6. 核对 Release 工作流、已发布说明和 Pages 内容。
+
+推送 `v*` tag 会触发 Release。校验仅接受稳定版本 `vX.Y.Z`，不允许前导零、预发布后缀或构建元数据。
+v2 及后续版本需要版本化模块路径和发布策略调整。当前 v0.x 版本可能有意调整 API 或格式规则。
+
+Release 通过可复用的 Quality 检查 tag 源码，发布 GitHub Release，然后部署同一 tag 的文档。
+Go 模块代理在 tag 推送后即可解析该版本，不依赖 GitHub Release 是否成功。
+已发布 tag 不得移动或复用。工作流失败时应解决原因并重跑失败任务，不得覆盖已有 Release。
 
 ## Pages 发布
 
-分支推送和 PR 只在 Quality 构建文档；自动部署仅在稳定 tag 的 Release 发布成功后执行。
-手动 Docs Pages 必须指定已发布、非 draft、非 prerelease 的版本，并显式检出该 tag。
-直接调用可复用工作流，避免依赖 `GITHUB_TOKEN` 创建的 Release 事件再次触发流水线。
+Pages 提供[英文手册](https://longxi-go.github.io/golayout/)和[中文手册](https://longxi-go.github.io/golayout/zh/)。
+分支推送和 Pull Request 只构建文档，不执行部署；Release 发布稳定版本的 GitHub Release 后部署文档。
 
-首次发布前，在 Settings → Pages 将 Source 设为 **GitHub Actions**。
-`github-pages` environment 应允许发布 tag；需要手动重部署时也允许默认分支。
-部署任务持有 Pages/OIDC 权限，普通检查只有只读权限。
+手动执行 Docs Pages 时，`release_tag` 必须指向已公开发布的稳定版本，工作流会检出该 tag。
+自动部署要求 `github-pages` 环境允许 `v*` tag；从 `main` 手动执行时，还需允许该分支。
+Pages 的 Source 使用 GitHub Actions。
 
-站点配置地址为 `https://longxi-go.github.io/golayout/`，中文位于 `/golayout/zh/`。
-发布构建从 `configure-pages` 获取基础 URL；本地或自定义预览可设置以 `/` 结尾的 `DOCS_SITE_URL`。
-本地预览地址为 `http://127.0.0.1:8000/golayout/`。
+部署任务具有 Pages 和 OIDC 权限，Quality 仅有仓库只读权限。
+Release 直接调用 Docs Pages，不依赖 `GITHUB_TOKEN` 再次产生事件触发部署。
 
-创建本地工作流文件不会自动启用 Pages 或发布 tag，也不能证明线上 Actions 成功。
-首次发布仍须获得用户确认。
+发布构建从 `configure-pages` 获取基础 URL。自定义域名或预览路径可通过 `DOCS_SITE_URL` 覆盖，
+值需要以斜杠结尾。

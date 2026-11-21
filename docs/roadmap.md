@@ -1,28 +1,40 @@
 # Roadmap
 
-## Stage 1: Shared structural formatter
+[English](roadmap.md) | [简体中文](roadmap.zh.md)
 
-Deliver the pure pkg/format library, private AST editor, source-matched CLI,
-tests, executable examples and Go 1.27 quality gates. Outcome: one deterministic,
-type-loading-free formatting implementation that preserves comments, rejects
-invalid syntax and produces idempotent output.
+## Stage 1: Shared source tooling
 
-## Stage 2: Ecosystem adoption
+Available: `pkg/format`, `pkg/header`, the CLI, focused tests and executable
+examples. Quality checks cover Go 1.27 compatibility, formatting, source notices,
+module dependencies, vet, unit tests, race tests and lint.
 
-Migrate gosr, ioc and nemo Make targets and generation steps to the shared
-golayout module. Keep gosr's contract module free of tool dependencies. Outcome:
-all ecosystem projects use one policy and CI checks the same immutable revision.
+Outcome: repositories and generators share one implementation without loading
+application types. Formatting is deterministic and idempotent; source notices
+are maintained independently.
 
-## Stage 3: Maintained shared policy
+## Stage 2: Consumer release adoption
 
-Version intentional formatting changes, run compatibility against representative
-consumer fixtures, and document upgrades. Add no rule without a concrete
-readability requirement and regression coverage.
+Use one pinned version across consumer source gates and generation steps.
+Keep CLI tooling outside dependency-free contracts. Verify each consumer's
+published dependencies with `GOWORK=off` before its release.
 
-## Stage 4: Standalone module releases
+Outcome: each consumer builds independently and applies the same shared policy.
+Adoption and release readiness are verified per repository; a local workspace
+build is insufficient.
 
-Validate stable tags and English release notes, rerun standalone quality and
-bilingual documentation checks on tagged source, publish GitHub Releases, then
-deploy documentation from the same published release. Outcome: consumers can
-pin a real module tag without local workspace substitutions; Pages describes
-released behavior. Initial v0.1.0 publication remains pending owner confirmation.
+## Stage 3: Policy maintenance
+
+Require a concrete readability requirement and regression coverage for each new
+rule. Version intentional policy changes, test representative consumer fixtures
+and document compatibility effects.
+
+Outcome: rule changes remain reviewable and consumers control when they upgrade.
+
+## Stage 4: Release and documentation delivery
+
+Available: stable-tag validation, maintained English notes, reusable tagged-source
+quality checks, GitHub Releases and deployment of bilingual documentation from
+the published tag.
+
+Outcome: consumers can pin published module versions, and Pages describes released
+behavior. Every release verifies its own commit, notes and deployed site.

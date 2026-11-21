@@ -1,46 +1,83 @@
 # Quick start
 
-Use the Go version from go.mod (currently Go 1.27.0 minimum). From this checkout:
+Requires Go 1.27.0 or later. A workspace is not required.
+
+## Install the CLI
 
 ```sh
-make setup
-make format
-make check-format
-make check
+go install github.com/longxi-go/golayout/cmd/golayout@v0.1.1
 ```
 
-## Check or rewrite explicit files
-
-After v0.1.0 is published, install with
-`go install github.com/longxi-go/golayout/cmd/golayout@v0.1.0`, or use
-`go get -tool github.com/longxi-go/golayout/cmd/golayout@v0.1.0` in a tool module
-and invoke `go tool golayout`. From this checkout:
+Add `GOBIN`, or `$(go env GOPATH)/bin` when `GOBIN` is unset, to `PATH`.
+To manage the CLI as a module tool instead, run this inside that module:
 
 ```sh
-go run ./cmd/golayout -lang go1.27 path/to/file.go
-go run ./cmd/golayout -w -lang go1.27 path/to/file.go
+go get -tool github.com/longxi-go/golayout/cmd/golayout@v0.1.1
+go tool golayout -lang go1.27 path/to/file.go
 ```
 
-The first command is read-only: layout differences return a nonzero exit status.
-`-w` applies the shared policy. Commands require at least one explicit file;
-repository discovery remains the caller's responsibility.
+## Check or rewrite files
 
-## Integrate a generator
+The installed CLI accepts one or more explicit files:
 
-Import `github.com/longxi-go/golayout/pkg/format`:
+```sh
+golayout -lang go1.27 path/to/file.go
+golayout -w -lang go1.27 path/to/file.go
+```
+
+The first command is read-only. Differences and invalid input return a nonzero
+exit status. `-w` writes changes. From a source checkout, use
+`go run ./cmd/golayout` in place of `golayout`.
+
+## Use the library
+
+In an existing Go module, add the formatting package:
+
+```sh
+go get github.com/longxi-go/golayout/pkg/format@v0.1.1
+```
+
+Save this program as `main.go` and run `go run .`:
 
 ```go
-formatted, err := format.Source(source, format.Options{
-    LangVersion: "go1.27",
-})
+package main
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/longxi-go/golayout/pkg/format"
+)
+
+func main() {
+	source := []byte("package sample\nfunc Ready() bool { return true }\n")
+	formatted, err := format.Source(source, format.Options{
+		LangVersion: "go1.27",
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Print(string(formatted))
+}
 ```
 
-This is a fragment: `source` is a byte slice owned by the generator. Handle the
-error before validating or writing `formatted`. Source input bytes are not mutated.
-Derive the target language from the consuming module's go.mod; the literal above
-only illustrates the option. Do not infer it from the generator's own toolchain.
+The result contains a multiline `Ready` function. `Source` leaves its input
+unchanged. Generators should derive `LangVersion` from the target module's
+`go.mod`, handle errors, then validate and persist the result.
 
-Use the public API before type validation/output. Consumers should delegate
-source checks to the same module version and preserve their own file exclusions.
-golayout needs no sibling module. See the optional
-[workspace instructions](development.md#local-workspace) for ecosystem development.
+## Maintain source notices
+
+Create a plain-text `codequality/HEADER` with the repository's copyright owner
+and license notice, then run:
+
+```sh
+golayout -header codequality/HEADER path/to/file.go
+golayout -w -header codequality/HEADER path/to/file.go
+```
+
+The default is read-only. Header mode preserves the code body and rejects
+replacing a different owner. It cannot be combined with `-lang`; run formatting
+separately. Generators can use `pkg/header.Source` before formatting.
+
+Repository-wide selection and local quality checks are covered by the
+[development guide](development.md).

@@ -1,10 +1,14 @@
-# golayout documentation site
+# Documentation site
 
-MkDocs Material builds English and Simplified Chinese from `docs/`, with local
-search and light/dark themes. Dependencies are locked in `uv.lock` and use Python
-3.12, following the reference kttp documentation structure.
+[English](README.md) | [简体中文](README.zh.md)
 
-From the repository root:
+The [published manual](https://longxi-go.github.io/golayout/) contains English and
+Simplified Chinese documentation for a released version. MkDocs Material builds
+both languages from `docs/`; Python 3.12 dependencies are locked in `uv.lock`.
+
+## Build and preview
+
+Install Python 3.12 and uv. From the repository root:
 
 ```sh
 make docs-setup
@@ -12,25 +16,31 @@ make docs-serve
 make docs-build
 ```
 
-Preview: <http://127.0.0.1:8000/golayout/>; Chinese: `/golayout/zh/`.
-Configured Pages URL: <https://longxi-go.github.io/golayout/>.
-The URL describes the deployment destination, not an already deployed site.
-
-Direct commands from this directory:
+Preview English at `http://127.0.0.1:8000/golayout/` and Chinese at `/golayout/zh/`.
+`docs-build` performs a strict build. To build from this directory directly:
 
 ```sh
 uv sync --locked
 uv run --locked mkdocs build --strict
 ```
 
-Override `DOCS_SITE_URL` for a custom domain/base path (include a trailing slash).
-Add both `page.md` and `page.zh.md`; update both navigation trees in `mkdocs.yml`.
-Never commit `site/` or `.venv/`. The lockfile and Markdown are project sources.
+Set `DOCS_SITE_URL` with a trailing slash to override the base URL. Keep `site/`
+and `.venv/` untracked.
 
-Quality strictly builds documentation for branch pushes and PRs without deployment.
-Stable tag publication runs the same checks, creates a GitHub Release, then calls
-Docs Pages to deploy that released tag through `github-pages`. Manual redeployment
-also requires an existing published stable release. Choose GitHub Actions as the
-Pages source before publication and permit release tags in environment rules.
+## Maintain both languages
 
-See the [development guide](docs/development.md) for workspace/publication limits.
+Each page has an English `page.md` and a Chinese `page.zh.md`. Update both
+navigation trees in `mkdocs.yml` when adding pages. Keep commands, code examples,
+requirements and limitations equivalent. Review technical accuracy separately
+from build and link validation.
+
+## Publish
+
+Quality builds both languages on branch pushes and pull requests. Release
+publishes a stable GitHub Release, then deploys documentation from its tag.
+Manual Docs Pages runs redeploy an existing published stable release.
+
+See [Development](docs/development.md) for prerequisites, environment policies and
+the release checklist. Repository README and supplementary guides are maintained
+outside the site; version-specific English notes remain in `docs/releases/` at
+the repository root.

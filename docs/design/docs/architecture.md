@@ -1,44 +1,70 @@
 # Architecture
 
-## In-memory composition
+## In-memory APIs
 
-`pkg/format.Source` validates the optional language version, calls private
-structural layout and then pinned gofumpt. Calls are independent and do not
-mutate the input. Invalid input returns no formatted output.
+`pkg/format.Source` validates the optional language version, applies AST layout
+rules and then runs gofumpt v0.12.0. It does not load application packages or
+resolve types. Calls are independent and leave input bytes unchanged. Invalid
+syntax returns an error without formatted output.
 
 ```text
-source bytes → AST structural layout → pinned gofumpt → formatted bytes
+source bytes → AST layout → gofumpt → formatted bytes
 ```
 
-Structural rules expand nonempty executable blocks, nonempty declarations and struct-like
-literals, and separate declarations. Syntax classification avoids turning every
-map/slice into a multiline structure. Formatting is deterministic and idempotent;
-it does not resolve imports through application package loading.
-Empty forms may remain on one line, including `select {}`, `struct{}`, `interface{}`
-and empty functions; no artificial statements or comments are added to expand them.
+`pkg/header.Source` applies an explicit plain-text notice independently of
+formatting. It preserves the code body, package documentation, build constraints
+and generated markers, and rejects replacing another copyright owner. It does
+not infer a template, owner or year policy. Template selection and optional
+loading belong to the caller.
 
-`pkg/header.Source` is a separate operation for source notices. It uses an explicit
-plain-text template, preserves generated markers/build constraints/package docs,
-and rejects replacing a different copyright owner. Header mode does not format
-the code body; generators apply it before their formatting and validation steps.
+## Formatting rules
 
-## CLI and file ownership
+| Syntax | Policy |
+| --- | --- |
+| Nonempty function and method bodies | Multiline |
+| Nonempty struct and interface declarations | One field declaration or interface element per line |
+| Nonempty control-flow blocks | Multiline, through Go formatting |
+| Top-level declarations and grouped type declarations | Separated by blank lines |
+| Named, generic or inferred composite literals | Multiline, including one-element literals |
+| Explicit map, slice and array literals | Multiline when values include composite or function literals |
+| Simple scalar collections and empty forms | Follow canonical Go formatting |
 
-`cmd/golayout` delegates to `internal/command`. The command prepares and validates
-explicit files before writing. Its read-only mode reports changed paths and
-returns a failure status; write mode applies replacements.
+Without type loading, a named composite literal cannot be reliably classified
+as a struct, map or slice. The syntax rule therefore treats these literals
+consistently. Empty forms such as `struct{}`, `interface{}`, `select {}` and empty
+functions may remain on one line. No artificial statements or comments are added.
 
-The API does not know Git, vendor directories, generated-file ownership or test
-fixture policy. Shared scripts discover eligible source for repository gates;
-consumers select their root/tool module and exclude caches and intentional fixtures.
-Complete Go `.go.tmpl` fixtures can opt into the same policy.
+Formatting is deterministic and idempotent. Package boundaries, file splitting
+and discretionary line wrapping remain design and review responsibilities.
+
+## CLI and file writes
+
+`cmd/golayout` delegates to `internal/command`. The command validates and transforms
+all requested files before writing any. Read-only mode reports changed paths and
+returns a nonzero status. Write mode replaces each file through a temporary file
+in the same directory and preserves its permission bits.
+
+Replacement is per-file, not a transaction across the entire batch. The CLI
+rejects non-regular files, including symlinks. File discovery and ownership checks
+remain outside the in-memory APIs.
+
+## Repository integration
+
+Shared scripts select Git-tracked and eligible untracked source. They exclude
+`.tmp`, `.cache`, vendor files and symlinks. Formatting includes complete,
+parseable `testdata/**/*.go.tmpl` fixtures; header refreshes exclude all testdata.
+Ordinary test inputs and production generator templates are not auto-formatted.
+
+Generators call `pkg/header` when a notice is required, then `pkg/format`, followed
+by their own validation and output steps. Repository gates use the same version
+through the CLI. Consumers must not copy private rules or formatter implementations.
 
 ## Dependency direction
 
-golayout depends on pinned gofumpt, not on gosr, ioc, nemo or application source.
-Generators call `pkg/format`; Makefiles delegate to the shared CLI/scripts.
-One implementation owns policy changes, so source and generated output cannot
-silently follow different rule copies.
+golayout depends on pinned gofumpt and its dependencies, not on gosr, ioc, nemo or
+application source. `pkg/format` composes the private layout implementation;
+`pkg/header` is independent of formatting. The command combines file operations
+with these public APIs.
 
-Upstream gopls/gofumpt settings alone do not enforce these additional structural
-rules. File responsibilities and sensible wrapping remain source-design decisions.
+Editor gofumpt settings cover only the upstream formatter. Use the golayout gate
+to check the complete structural policy.
