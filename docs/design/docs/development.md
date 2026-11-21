@@ -65,6 +65,18 @@ require review.
 
 ## Releases
 
+```mermaid
+flowchart TB
+    B["Branch push or pull request"] --> Q["Quality"]
+    Q --> D["Build docs; no deployment"]
+    T["Push vX.Y.Z"] --> V["Validate tag and maintained notes"]
+    V --> R["Quality on exact tagged source"]
+    R --> G["GitHub Release"]
+    G --> P["Build and deploy Pages from the same tag"]
+    X["Manual Docs Pages"] --> E["Require existing stable Release; check out its tag"]
+    E --> P
+```
+
 Git tags define module versions. The `go.mod` `go` directive defines the minimum
 Go version; the documentation project's version does not control module releases.
 Each release has English notes in `docs/releases/vX.Y.Z.md`, starting with
@@ -109,3 +121,8 @@ on a second event from `GITHUB_TOKEN`.
 
 Deployed builds obtain their base URL from `configure-pages`. Override
 `DOCS_SITE_URL` with a trailing slash for a custom domain or preview path.
+
+Material requests the latest stable Release, Star count and Fork count from
+GitHub in the browser. The release label describes repository activity; it does
+not identify the source version of this page. The repository link remains usable
+when those requests fail.

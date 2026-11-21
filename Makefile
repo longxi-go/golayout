@@ -24,7 +24,7 @@ help:
 	  '  validate-release  Validate notes for TAG=vX.Y.Z' \
 	  '  docs-setup        Install locked documentation dependencies (Python 3.12)' \
 	  '  docs-serve        Preview bilingual documentation locally' \
-	  '  docs-build        Strictly build both documentation languages' \
+	  '  docs-build        Build both languages and check diagrams/repo links' \
 	  '  setup             Verify pinned formatter dependencies' \
 	  '  format            Rewrite owned Go source using shared policy' \
 	  '  check-format      Check full Go layout policy without writes' \
@@ -78,6 +78,7 @@ docs-serve: docs-setup
 	cd docs/design && $(UV) run --locked mkdocs serve
 docs-build: docs-setup
 	cd docs/design && $(UV) run --locked mkdocs build --strict
+	cd docs/design && $(UV) run --locked python -m unittest discover -s tests -v
 
 .DEFAULT:
 	@printf 'Unknown target: %s. Available targets follow.\n' "$@" >&2

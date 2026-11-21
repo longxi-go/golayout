@@ -10,12 +10,25 @@ golayout 为 Go 仓库和代码生成器提供统一的源码格式化与文件�
 要求 **Go 1.27.0 或更高版本**。当前模块尚未达到 v1，后续版本可能调整 API 或格式规则；
 应固定依赖版本，以便复现检查结果。
 
+箭头表示入口对 API 的调用关系。文件头处理与格式化分别执行。
+
+```mermaid
+flowchart TB
+    R["仓库检查"] --> C["cmd/golayout"]
+    G["代码生成器"] --> F["pkg/format"]
+    G --> H["pkg/header"]
+    C --> F
+    C --> H
+    F --> A["internal/layout"]
+    F --> U["gofumpt v0.12.0"]
+```
+
 ## 安装与使用
 
 安装 CLI，检查显式指定的文件：
 
 ```sh
-go install github.com/longxi-go/golayout/cmd/golayout@v0.1.2
+go install github.com/longxi-go/golayout/cmd/golayout@v0.1.3
 golayout -lang go1.27 file.go
 golayout -w -lang go1.27 file.go
 ```
@@ -26,11 +39,11 @@ golayout -w -lang go1.27 file.go
 也可以将 CLI 固定为 Go 模块工具：
 
 ```sh
-go get -tool github.com/longxi-go/golayout/cmd/golayout@v0.1.2
+go get -tool github.com/longxi-go/golayout/cmd/golayout@v0.1.3
 go tool golayout -lang go1.27 file.go
 ```
 
-生成器通过 `go get` 添加 `github.com/longxi-go/golayout/pkg/format@v0.1.2`，
+生成器通过 `go get` 添加 `github.com/longxi-go/golayout/pkg/format@v0.1.3`，
 然后调用内存 API：
 
 ```go

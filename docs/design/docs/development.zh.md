@@ -66,6 +66,18 @@ make docs-build
 
 ## 版本发布
 
+```mermaid
+flowchart TB
+    B["分支推送或 Pull Request"] --> Q["Quality"]
+    Q --> D["构建文档，不部署"]
+    T["推送 vX.Y.Z"] --> V["校验 tag 与版本说明"]
+    V --> R["检查 tag 对应的源码"]
+    R --> G["GitHub Release"]
+    G --> P["从同一 tag 构建并部署 Pages"]
+    X["手动执行 Docs Pages"] --> E["要求已有稳定 Release，并检出其 tag"]
+    E --> P
+```
+
 Git tag 定义模块版本，`go.mod` 的 `go` 指令定义最低 Go 版本，文档工程版本不控制模块发布。
 每个版本的英文说明保存在 `docs/releases/vX.Y.Z.md`，以 `# golayout vX.Y.Z` 开头，正文不能为空。
 README 说明使用方法和发布流程；版本历史由这些说明和 GitHub Releases 记录。
@@ -99,3 +111,6 @@ Release 直接调用 Docs Pages，不依赖 `GITHUB_TOKEN` 再次产生事件触
 
 发布构建从 `configure-pages` 获取基础 URL。自定义域名或预览路径可通过 `DOCS_SITE_URL` 覆盖，
 值需要以斜杠结尾。
+
+Material 在浏览器中从 GitHub 请求最新稳定 Release、Star 数和 Fork 数。
+Release 标签反映仓库信息，不代表当前页面的源码版本；请求失败时仍可使用仓库链接。

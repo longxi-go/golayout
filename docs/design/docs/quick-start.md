@@ -5,14 +5,14 @@ Requires Go 1.27.0 or later. A workspace is not required.
 ## Install the CLI
 
 ```sh
-go install github.com/longxi-go/golayout/cmd/golayout@v0.1.2
+go install github.com/longxi-go/golayout/cmd/golayout@v0.1.3
 ```
 
 Add `GOBIN`, or `$(go env GOPATH)/bin` when `GOBIN` is unset, to `PATH`.
 To manage the CLI as a module tool instead, run this inside that module:
 
 ```sh
-go get -tool github.com/longxi-go/golayout/cmd/golayout@v0.1.2
+go get -tool github.com/longxi-go/golayout/cmd/golayout@v0.1.3
 go tool golayout -lang go1.27 path/to/file.go
 ```
 
@@ -34,7 +34,7 @@ exit status. `-w` writes changes. From a source checkout, use
 In an existing Go module, add the formatting package:
 
 ```sh
-go get github.com/longxi-go/golayout/pkg/format@v0.1.2
+go get github.com/longxi-go/golayout/pkg/format@v0.1.3
 ```
 
 Save this program as `main.go` and run `go run .`:

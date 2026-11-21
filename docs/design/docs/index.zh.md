@@ -6,6 +6,19 @@
 [开始使用](quick-start.md){ .md-button .md-button--primary }
 [阅读架构](architecture.md){ .md-button }
 
+箭头表示对共享 API 的调用，文件头模式与格式化模式分别执行。
+
+```mermaid
+flowchart TB
+    R["仓库检查"] --> C["cmd/golayout"]
+    G["代码生成器"] --> F["pkg/format"]
+    G --> H["pkg/header"]
+    C --> F
+    C --> H
+    F --> A["internal/layout"]
+    F --> U["gofumpt v0.12.0"]
+```
+
 | 组件 | 职责 |
 | --- | --- |
 | `pkg/format` | 使用 AST 布局规则与 gofumpt v0.12.0 格式化源码字节 |

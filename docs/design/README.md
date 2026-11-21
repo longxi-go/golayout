@@ -22,6 +22,7 @@ Preview English at `http://127.0.0.1:8000/golayout/` and Chinese at `/golayout/z
 ```sh
 uv sync --locked
 uv run --locked mkdocs build --strict
+uv run --locked python -m unittest discover -s tests -v
 ```
 
 Set `DOCS_SITE_URL` with a trailing slash to override the base URL. Keep `site/`
@@ -44,3 +45,17 @@ See [Development](docs/development.md) for prerequisites, environment policies a
 the release checklist. Repository README and supplementary guides are maintained
 outside the site; version-specific English notes remain in `docs/releases/` at
 the repository root.
+
+## Diagrams and repository information
+
+Use Mermaid diagrams to introduce architecture, dependencies, state transitions
+and workflows. Keep API constraints, ownership and failure details in the text.
+Maintain the same diagram structure in both languages. `make docs-build` checks
+the repository link and Mermaid markup; also preview diagrams in a browser to
+check syntax, layout and both color schemes.
+
+The header uses Material's standard repository information: latest stable GitHub
+Release, Star count and Fork count. These are requested by the visitor's browser;
+if GitHub is unavailable or rate-limited, the repository link remains visible.
+The release label is not the version of the page being read and is not a source
+branch or document-version selector.

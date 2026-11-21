@@ -8,7 +8,7 @@ Use an immutable published version for both source checks and generated output.
 In the module that owns the tool dependency:
 
 ```sh
-go get -tool github.com/longxi-go/golayout/cmd/golayout@v0.1.2
+go get -tool github.com/longxi-go/golayout/cmd/golayout@v0.1.3
 ```
 
 Generators import `github.com/longxi-go/golayout/pkg/format`; they must declare

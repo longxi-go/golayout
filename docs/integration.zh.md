@@ -8,7 +8,7 @@
 在管理工具依赖的模块中执行：
 
 ```sh
-go get -tool github.com/longxi-go/golayout/cmd/golayout@v0.1.2
+go get -tool github.com/longxi-go/golayout/cmd/golayout@v0.1.3
 ```
 
 生成器导入 `github.com/longxi-go/golayout/pkg/format`，应声明相同的模块版本。

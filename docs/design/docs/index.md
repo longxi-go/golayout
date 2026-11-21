@@ -6,6 +6,19 @@ CLI for Go repositories and code generators. It requires Go 1.27.0 or later.
 [Get started](quick-start.md){ .md-button .md-button--primary }
 [Read the architecture](architecture.md){ .md-button }
 
+Arrows show calls to shared APIs; header and format modes are separate.
+
+```mermaid
+flowchart TB
+    R["Repository checks"] --> C["cmd/golayout"]
+    G["Code generators"] --> F["pkg/format"]
+    G --> H["pkg/header"]
+    C --> F
+    C --> H
+    F --> A["internal/layout"]
+    F --> U["gofumpt v0.12.0"]
+```
+
 | Component | Responsibility |
 | --- | --- |
 | `pkg/format` | Format source bytes using AST layout rules and gofumpt v0.12.0 |

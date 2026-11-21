@@ -7,8 +7,13 @@ rules and then runs gofumpt v0.12.0. It does not load application packages or
 resolve types. Calls are independent and leave input bytes unchanged. Invalid
 syntax returns an error without formatted output.
 
-```text
-source bytes → AST layout → gofumpt → formatted bytes
+```mermaid
+flowchart TB
+    S["Source bytes"] --> V{"Valid language option and syntax?"}
+    V -->|Yes| L["AST layout"]
+    L --> G["gofumpt v0.12.0"]
+    G --> F["Formatted bytes"]
+    V -->|No| E["Error; no formatted output"]
 ```
 
 `pkg/header.Source` applies an explicit plain-text notice independently of
@@ -38,6 +43,16 @@ Formatting is deterministic and idempotent. Package boundaries, file splitting
 and discretionary line wrapping remain design and review responsibilities.
 
 ## CLI and file writes
+
+```mermaid
+flowchart TB
+    F["Explicit regular files"] --> P["Read and transform every file"]
+    P -->|Error| E["Return error before any writes"]
+    P -->|Prepared| M{"-w?"}
+    M -->|No| R["Report changed paths; nonzero if changes exist"]
+    M -->|Yes| W["Replace changed files via same-directory temporary files"]
+    W --> N["A later write failure may leave earlier replacements"]
+```
 
 `cmd/golayout` delegates to `internal/command`. The command validates and transforms
 all requested files before writing any. Read-only mode reports changed paths and

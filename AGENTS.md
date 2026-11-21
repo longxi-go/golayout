@@ -208,6 +208,14 @@ config := Config{
 
 ## Documentation Standards
 
+- Prefer diagrams before detailed prose when explaining architecture, dependency
+  directions, workflows, states or interactions. Use Mermaid flowcharts, sequence
+  diagrams or state diagrams as appropriate; do not force diagrams onto simple facts.
+- Keep diagram labels and technical meaning aligned in English and Simplified
+  Chinese. Distinguish existing mechanisms, normative obligations and planned work.
+  Retain ownership, failure, concurrency and compatibility details in concise prose.
+- Validate diagram rendering as well as Markdown builds; a successful static build
+  does not prove Mermaid syntax or visual readability.
 - Every package MUST have `doc.go` and `example_test.go`; this is not limited to core packages or optional discoverability improvements.
 - Package documentation must explain purpose, responsibility, intended use, constraints and extension boundaries.
 - Exported contracts, types and important functions MUST have meaningful Go doc comments.

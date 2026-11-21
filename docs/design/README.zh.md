@@ -21,6 +21,7 @@ make docs-build
 ```sh
 uv sync --locked
 uv run --locked mkdocs build --strict
+uv run --locked python -m unittest discover -s tests -v
 ```
 
 通过以斜杠结尾的 `DOCS_SITE_URL` 覆盖基础 URL。`site/` 和 `.venv/` 不纳入版本控制。
@@ -38,3 +39,13 @@ Release 发布稳定版本的 GitHub Release 后，部署对应 tag 的文档。
 
 开发依赖、环境规则和发布清单见[开发指南](docs/development.zh.md)。
 仓库 README 和补充指南在站点外维护；各版本的英文说明保存在仓库根目录下的 `docs/releases/`。
+
+## 图表与仓库信息
+
+架构、依赖、状态转换和工作流程优先用 Mermaid 图说明；API 约束、所有权和失败行为保留文字说明。
+两个语言版本保持相同的图结构。`make docs-build` 检查仓库链接和 Mermaid 标记，
+图的语法、布局及明暗主题还需在浏览器中预览。
+
+页头使用 Material 默认的仓库信息：GitHub 最新稳定 Release、Star 数和 Fork 数。
+这些信息由访问者的浏览器请求；GitHub 不可用或触发限流时，仓库链接仍然显示。
+Release 标签不表示当前页面对应的版本，也不提供源码分支或文档版本切换。

@@ -10,12 +10,25 @@ Neither API loads application packages.
 Requires **Go 1.27.0 or later**. This pre-v1 module may change APIs or formatting
 rules in future releases; pin a version for reproducible checks.
 
+Arrows show which APIs each entry point calls. Header handling and formatting remain separate operations.
+
+```mermaid
+flowchart TB
+    R["Repository checks"] --> C["cmd/golayout"]
+    G["Code generators"] --> F["pkg/format"]
+    G --> H["pkg/header"]
+    C --> F
+    C --> H
+    F --> A["internal/layout"]
+    F --> U["gofumpt v0.12.0"]
+```
+
 ## Install and use
 
 Install the CLI and check explicit files:
 
 ```sh
-go install github.com/longxi-go/golayout/cmd/golayout@v0.1.2
+go install github.com/longxi-go/golayout/cmd/golayout@v0.1.3
 golayout -lang go1.27 file.go
 golayout -w -lang go1.27 file.go
 ```
@@ -26,11 +39,11 @@ exit status; `-w` writes changes. The installation directory must be on `PATH`.
 To pin the CLI as a Go module tool instead:
 
 ```sh
-go get -tool github.com/longxi-go/golayout/cmd/golayout@v0.1.2
+go get -tool github.com/longxi-go/golayout/cmd/golayout@v0.1.3
 go tool golayout -lang go1.27 file.go
 ```
 
-For generators, add `github.com/longxi-go/golayout/pkg/format@v0.1.2` with
+For generators, add `github.com/longxi-go/golayout/pkg/format@v0.1.3` with
 `go get`, then call the in-memory API:
 
 ```go
