@@ -8,9 +8,9 @@ Available: `pkg/format`, `pkg/header`, the CLI, focused tests and executable
 examples. Quality checks cover Go 1.27 compatibility, formatting, source notices,
 module dependencies, vet, unit tests, race tests and lint.
 
-Outcome: repositories and generators share one implementation without loading
-application types. Formatting is deterministic and idempotent; source notices
-are maintained independently.
+Repositories and generators share this implementation without loading application
+types. Formatting is deterministic and idempotent; source notices are maintained
+independently.
 
 ## Stage 2: Consumer release adoption
 
@@ -18,17 +18,16 @@ Use one pinned version across consumer source gates and generation steps.
 Keep CLI tooling outside dependency-free contracts. Verify each consumer's
 published dependencies with `GOWORK=off` before its release.
 
-Outcome: each consumer builds independently and applies the same shared policy.
-Adoption and release readiness are verified per repository; a local workspace
-build is insufficient.
+A consumer completes this stage when it builds independently and applies the
+shared policy. Verify adoption and release readiness per repository; a local
+workspace build is insufficient.
 
 ## Stage 3: Policy maintenance
 
-Require a concrete readability requirement and regression coverage for each new
-rule. Version intentional policy changes, test representative consumer fixtures
-and document compatibility effects.
-
-Outcome: rule changes remain reviewable and consumers control when they upgrade.
+Each new rule needs a concrete readability requirement and regression coverage.
+Version intentional policy changes, test representative consumer fixtures and
+document compatibility effects so changes can be reviewed and consumers can
+choose when to upgrade.
 
 ## Stage 4: Release and documentation delivery
 
@@ -36,5 +35,5 @@ Available: stable-tag validation, maintained English notes, reusable tagged-sour
 quality checks, GitHub Releases and deployment of bilingual documentation from
 the published tag.
 
-Outcome: consumers can pin published module versions, and Pages describes released
+Consumers can pin published module versions, and Pages describes released
 behavior. Every release verifies its own commit, notes and deployed site.

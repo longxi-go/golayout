@@ -5,20 +5,20 @@
 ## 安装 CLI
 
 ```sh
-go install github.com/longxi-go/golayout/cmd/golayout@v0.1.1
+go install github.com/longxi-go/golayout/cmd/golayout@v0.1.2
 ```
 
 将 `GOBIN` 加入 `PATH`；未设置 `GOBIN` 时，使用 `$(go env GOPATH)/bin`。
 也可以在模块内将 CLI 声明为模块工具：
 
 ```sh
-go get -tool github.com/longxi-go/golayout/cmd/golayout@v0.1.1
+go get -tool github.com/longxi-go/golayout/cmd/golayout@v0.1.2
 go tool golayout -lang go1.27 path/to/file.go
 ```
 
 ## 检查或重写文件
 
-已安装的 CLI 接收一个或多个显式文件：
+使用 CLI 时，需指定一个或多个文件路径：
 
 ```sh
 golayout -lang go1.27 path/to/file.go
@@ -33,7 +33,7 @@ golayout -w -lang go1.27 path/to/file.go
 在已有 Go 模块中添加格式化包：
 
 ```sh
-go get github.com/longxi-go/golayout/pkg/format@v0.1.1
+go get github.com/longxi-go/golayout/pkg/format@v0.1.2
 ```
 
 将以下程序保存为 `main.go`，执行 `go run .`：
@@ -65,7 +65,7 @@ func main() {
 
 ## 维护源码文件头
 
-创建纯文本 `codequality/HEADER`，写入项目的版权主体和许可证声明，然后执行：
+创建纯文本文件 `codequality/HEADER`，写入项目的版权主体和许可证声明，然后执行：
 
 ```sh
 golayout -header codequality/HEADER path/to/file.go
@@ -75,4 +75,4 @@ golayout -w -header codequality/HEADER path/to/file.go
 默认只读检查。文件头模式保留代码体，拒绝覆盖其他版权主体的声明。
 它不能与 `-lang` 合用，格式化需要单独执行。生成器可在格式化前调用 `pkg/header.Source`。
 
-仓库批量文件选择和本地质量检查见[开发指南](development.md)。
+批量处理时的文件选择规则和本地质量检查见[开发指南](development.md)。

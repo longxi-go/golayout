@@ -3,18 +3,19 @@
 [English](README.md) | [简体中文](README.zh_CN.md) | [在线手册](https://longxi-go.github.io/golayout/zh/)
 
 golayout 为 Go 仓库和代码生成器提供统一的源码格式化与文件头工具。
-`pkg/format` 组合 AST 布局规则与 gofumpt v0.12.0；`pkg/header` 独立维护源码版权声明。
+`pkg/format` 结合 AST 布局规则与 gofumpt v0.12.0；`pkg/header` 负责更新文件头声明，
+与格式化分开执行。
 两个 API 均不加载应用包。
 
 要求 **Go 1.27.0 或更高版本**。当前模块尚未达到 v1，后续版本可能调整 API 或格式规则；
-应固定依赖版本，确保检查结果可复现。
+应固定依赖版本，以便复现检查结果。
 
 ## 安装与使用
 
 安装 CLI，检查显式指定的文件：
 
 ```sh
-go install github.com/longxi-go/golayout/cmd/golayout@v0.1.1
+go install github.com/longxi-go/golayout/cmd/golayout@v0.1.2
 golayout -lang go1.27 file.go
 golayout -w -lang go1.27 file.go
 ```
@@ -25,11 +26,11 @@ golayout -w -lang go1.27 file.go
 也可以将 CLI 固定为 Go 模块工具：
 
 ```sh
-go get -tool github.com/longxi-go/golayout/cmd/golayout@v0.1.1
+go get -tool github.com/longxi-go/golayout/cmd/golayout@v0.1.2
 go tool golayout -lang go1.27 file.go
 ```
 
-生成器通过 `go get` 添加 `github.com/longxi-go/golayout/pkg/format@v0.1.1`，
+生成器通过 `go get` 添加 `github.com/longxi-go/golayout/pkg/format@v0.1.2`，
 然后调用内存 API：
 
 ```go
@@ -39,7 +40,7 @@ formatted, err := format.Source(source, format.Options{
 ```
 
 其中 `source` 为字节切片。处理 `err` 后再验证或写出结果。
-`LangVersion` 应从目标模块的 `go.mod` 推导，示例值仅用于展示选项。
+`LangVersion` 应从目标模块的 `go.mod` 推导，此处仅以 `go1.27` 为例。
 完整程序见[快速开始](docs/design/docs/quick-start.zh.md)。
 
 ## 格式规则
@@ -55,7 +56,7 @@ formatted, err := format.Source(source, format.Options{
 
 ## 源码文件头
 
-`codequality/HEADER` 为项目拥有的 Go 文件提供纯文本版权声明：
+`codequality/HEADER` 保存项目维护的 Go 文件所需的纯文本文件头声明：
 
 ```sh
 golayout -header codequality/HEADER file.go
@@ -65,7 +66,7 @@ golayout -w -header codequality/HEADER file.go
 文件头模式保留生成标记、构建约束、包注释和代码体，拒绝覆盖其他版权主体的声明，
 且不格式化代码。文件头处理与格式化应分别执行。
 
-生成器可使用显式选择的模板调用 `pkg/header.Source`，然后格式化并验证输出。
+生成器可选定模板并调用 `pkg/header.Source`，然后格式化并验证输出。
 文件发现、模板读取和文件所有权由调用方负责。
 
 ## 开发
@@ -88,13 +89,12 @@ make docs-build
 
 Git tag 定义模块版本；`go.mod` 中的 `go` 指令定义最低 Go 版本。
 分支推送和 Pull Request 运行 Quality。`v*` tag 触发 Release：校验稳定版本 `vX.Y.Z`
-及对应说明，检查 tag 源码，发布 GitHub Release，然后部署该版本文档。
+及对应版本说明，检查该 tag 的源码，发布 GitHub Release，然后部署该版本文档。
 已发布 tag 不得移动或复用。
 
 [GitHub Releases](https://github.com/longxi-go/golayout/releases) 提供版本历史。
 每个版本的英文说明保存在 [`docs/releases`](docs/releases)，
 [发布指南](docs/design/docs/development.zh.md#releases)说明具体流程。
-本节说明发布机制，不逐版本追加更新记录。
 
 ## 文档
 
@@ -103,5 +103,5 @@ Git tag 定义模块版本；`go.mod` 中的 `go` 指令定义最低 Go 版本�
 - [站点维护](docs/design/README.zh.md)
 - [路线图](docs/roadmap.zh.md)
 
-Pages 展示已发布稳定版本的文档。分支修改由 CI 构建验证，随版本发布部署到站点。
-使用 `make docs-serve` 预览本地修改。
+运行 `make docs-serve` 可在本地预览文档。CI 会构建分支中的修改；
+稳定版本发布并部署后，Pages 才会更新。

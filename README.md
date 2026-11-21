@@ -4,7 +4,7 @@
 
 golayout provides shared Go source formatting and license-header tooling for
 repositories and code generators. `pkg/format` combines AST layout rules with
-gofumpt v0.12.0. `pkg/header` maintains source notices as a separate operation.
+gofumpt v0.12.0. `pkg/header` updates source notices independently of formatting.
 Neither API loads application packages.
 
 Requires **Go 1.27.0 or later**. This pre-v1 module may change APIs or formatting
@@ -15,7 +15,7 @@ rules in future releases; pin a version for reproducible checks.
 Install the CLI and check explicit files:
 
 ```sh
-go install github.com/longxi-go/golayout/cmd/golayout@v0.1.1
+go install github.com/longxi-go/golayout/cmd/golayout@v0.1.2
 golayout -lang go1.27 file.go
 golayout -w -lang go1.27 file.go
 ```
@@ -26,11 +26,11 @@ exit status; `-w` writes changes. The installation directory must be on `PATH`.
 To pin the CLI as a Go module tool instead:
 
 ```sh
-go get -tool github.com/longxi-go/golayout/cmd/golayout@v0.1.1
+go get -tool github.com/longxi-go/golayout/cmd/golayout@v0.1.2
 go tool golayout -lang go1.27 file.go
 ```
 
-For generators, add `github.com/longxi-go/golayout/pkg/format@v0.1.1` with
+For generators, add `github.com/longxi-go/golayout/pkg/format@v0.1.2` with
 `go get`, then call the in-memory API:
 
 ```go
@@ -105,7 +105,6 @@ Published tags must not be moved or reused.
 [GitHub Releases](https://github.com/longxi-go/golayout/releases) contains version
 history. Each version has English notes under [`docs/releases`](docs/releases);
 the [release guide](docs/design/docs/development.md#releases) describes the process.
-This section documents that process rather than accumulating version entries.
 
 ## Documentation
 
@@ -114,6 +113,5 @@ This section documents that process rather than accumulating version entries.
 - [Site maintenance](docs/design/README.md)
 - [Roadmap](docs/roadmap.md)
 
-Pages serves documentation from a published stable release. Branch changes are
-built by CI and become public when a release deploys them. Use `make docs-serve`
-to preview local changes.
+Use `make docs-serve` to preview changes locally. CI builds documentation on
+branches; Pages is updated when a stable release is published and deployed.

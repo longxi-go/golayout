@@ -60,7 +60,8 @@ virtual environment untracked.
 
 Before committing documentation, review both languages against the implementation.
 Check prerequisites, command context, API behavior, limitations, versions and links.
-A successful build establishes renderability, not factual or translation accuracy.
+A successful build validates rendering; technical accuracy and translation still
+require review.
 
 ## Releases
 
@@ -68,7 +69,7 @@ Git tags define module versions. The `go.mod` `go` directive defines the minimum
 Go version; the documentation project's version does not control module releases.
 Each release has English notes in `docs/releases/vX.Y.Z.md`, starting with
 `# golayout vX.Y.Z` and a nonempty body. README describes usage and the release
-process; version history belongs to those notes and GitHub Releases.
+process; the notes and GitHub Releases record version history.
 
 1. Add the version's notes and update installation examples in both languages.
 2. Review the complete diff, including documentation accuracy and language parity.

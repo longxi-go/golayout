@@ -21,7 +21,7 @@ GOWORK=off make check
 ```
 
 `setup` 解析格式化工具依赖，不安装二进制或修改模块文件。
-`license-headers` 和 `format` 写入项目拥有的源码。
+`license-headers` 和 `format` 修改项目维护的源码。
 `check` 对源码执行只读检查，涵盖文件头、布局、模块依赖整洁性、vet、带覆盖率的单元测试、
 随机顺序的 race 测试、lint 及工具测试；执行过程可能写入工具缓存。
 单独的检查目标见 `make help`。
@@ -41,8 +41,8 @@ go work init ./golayout ./consumer
 独立 tools 模块等嵌套模块需要显式加入。`go.work` 和 `go.work.sum` 仅供本地使用；
 生产 `go.mod` 不得包含开发者专属的目录替换。
 
-在各模块内部运行检查。工作区构建不能证明使用方声明的依赖版本可独立解析，
-此项检查需要设置 `GOWORK=off`。
+在各模块内运行检查。工作区构建不会验证使用方声明的依赖版本能否独立解析，
+验证时需设置 `GOWORK=off`。
 
 ## 文档
 
@@ -59,15 +59,15 @@ make docs-build
 站点源码位于 `docs/design/docs`。新增页面需同时提供 `page.md` 和 `page.zh.md`，
 并更新 `mkdocs.yml` 的两份导航。生成的 HTML 和虚拟环境不纳入版本控制。
 
-提交文档前，应依据实现审查两个语言版本，核对前提、命令执行位置、API 行为、限制、版本和链接。
-构建成功只能证明可渲染，不能证明事实或翻译准确。
+提交文档前，应对照实现审查两个语言版本，核对前提条件、命令执行位置、API 行为、限制、版本和链接。
+构建成功表示文档可以渲染，技术准确性和翻译质量仍需人工审查。
 
 <a id="releases"></a>
 
 ## 版本发布
 
 Git tag 定义模块版本，`go.mod` 的 `go` 指令定义最低 Go 版本，文档工程版本不控制模块发布。
-每个版本在 `docs/releases/vX.Y.Z.md` 保存英文说明，以 `# golayout vX.Y.Z` 开头并包含非空正文。
+每个版本的英文说明保存在 `docs/releases/vX.Y.Z.md`，以 `# golayout vX.Y.Z` 开头，正文不能为空。
 README 说明使用方法和发布流程；版本历史由这些说明和 GitHub Releases 记录。
 
 1. 添加该版本说明，同步更新两个语言版本的安装示例。
@@ -75,11 +75,11 @@ README 说明使用方法和发布流程；版本历史由这些说明和 GitHub
 3. 执行 `GOWORK=off make check docs-build validate-release TAG=vX.Y.Z`，
    将 `vX.Y.Z` 替换为待发布版本。
 4. 提交并推送已审查文件，等待该提交的 Quality 检查通过。
-5. 在同一提交上创建附注 tag，说明使用 `Release golayout vX.Y.Z`，然后推送 tag。
+5. 在同一提交上创建附注 tag，附注内容为 `Release golayout vX.Y.Z`，然后推送 tag。
 6. 核对 Release 工作流、已发布说明和 Pages 内容。
 
 推送 `v*` tag 会触发 Release。校验仅接受稳定版本 `vX.Y.Z`，不允许前导零、预发布后缀或构建元数据。
-v2 及后续版本需要版本化模块路径和发布策略调整。当前 v0.x 版本可能有意调整 API 或格式规则。
+v2 及后续版本需要为模块路径添加版本后缀，并调整发布策略。当前 v0.x 版本仍可能调整 API 或格式规则。
 
 Release 通过可复用的 Quality 检查 tag 源码，发布 GitHub Release，然后部署同一 tag 的文档。
 Go 模块代理在 tag 推送后即可解析该版本，不依赖 GitHub Release 是否成功。
