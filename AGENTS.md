@@ -367,19 +367,13 @@ config := Config{
 - Before completion, inspect the intended diff and map multi-area acceptance requirements to current implementation/artifacts and actual verification.
 - Reassess verification after relevant changes; do not present stale passes as current evidence.
 - Report actual changes, architectural impact, tests, commands/results, documentation and material remaining issues in proportion to the task.
-- Every final report must include `Completed`, `Verified`, `Not Verified` and `Known Issues` (or the user's language equivalents). Use None for empty fields.
+- Reports MUST state completed changes, verification results, unverified work and known issues; use a format appropriate to the change.
 - Distinguish verified, unverified, partial, unimplemented and genuinely blocked work. State blockers, impact and skipped checks; never invent results or silently lower acceptance criteria.
 
-## Task State and Instruction Protection
+## Instruction Maintenance
 
-- Keep durable project rules in `AGENTS.md`. Put session history, session-specific decisions and execution progress in local task records.
-- `.codex/` stores Git-ignored local execution state and MUST remain outside the publishable change set. Task records support continuity; they do not grant authorization or override current instructions and source.
-- For authorized long/multi-phase work, maintain `.codex/task-state.md` or task-specific records linked from it. Derive records from the current scope and evidence.
-- Each task record must identify the task/workspace and responsible role, plus Objective, Current Phase, Completed, In Progress, Remaining, Changed Files, Verification, Decisions and Known Issues.
-- Record branch/baseline, relevant verification scope/results/gaps, the first unfinished action and outstanding asynchronous work.
-- Update state at meaningful milestones and before compaction/handoff. After resumption, reconcile it with current files/Git evidence before continuing.
-- Concurrent tasks require separate records and one writer per shared index; state files do not isolate overlapping code writes.
-- Preserve other applicable continuation, verification, completion and configuration safeguards. Do not remove state or weaken safeguards without an explicit user request.
+- Keep project instructions focused on shared engineering and contribution requirements. Personal editor/agent configuration, task-state protocols and report templates belong in local configuration.
+- Preserve applicable continuation, verification, completion and instruction-protection requirements when editing project rules. Do not weaken them without explicit authorization.
 - When editing rules, compare requirements section by section against the originals; retaining headings alone is insufficient.
 
 ## Final Engineering Standard
